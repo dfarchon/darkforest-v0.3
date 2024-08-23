@@ -52,7 +52,7 @@ open eth/
 nvm use 18 // make sure the node version is 18
 npm install // NOTE: please use npm to install the dependencies, use yarn will have bugs
 npx hardhat node 
-npm run hardhat:dev deploy --whitelist false // open another terminal to deploy
+npx hardhat --network localhost deploy --whitelist false // open another terminal to deploy
 ```
 
 ### 2. client 

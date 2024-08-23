@@ -48,7 +48,7 @@ task("deploy", "deploy all contracts")
   .setAction(deploy);
 
 async function deploy(
-  args: { whitelist: boolean; fund: number; subgraph: string },
+  args: { whitelist: boolean; fund: number;  },
   hre: HardhatRuntimeEnvironment,
 ) {
   const isDev =
@@ -91,6 +91,8 @@ async function deploy(
   } else {
     whitelistEnabled = args.whitelist;
   }
+
+  console.log('whitelistEnabled:',whitelistEnabled);
 
   if (DISABLE_ZK_CHECKS) {
     console.log("WARNING: ZK checks disabled.");
