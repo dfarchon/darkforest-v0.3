@@ -1,3 +1,74 @@
+
+
+# Dark Forest v0.3 (2024 version)
+
+Let’s revisit the summer of 2020 together.
+
+We ([DFArchon](https://x.com/DFArchon)) have updated the smart contracts and development environment for the 2024 version.
+
+This work is a step toward our upcoming goal of porting Dark Forest to MUD 🦑.
+
+To bring our future development plans to life, we are seeking both funding and developers.
+
+We warmly invite you to reach out and connect with us.
+
+Thank you for your support.
+
+Discord: https://discord.gg/XpBPEnsvgX
+
+Telegram: https://t.me/darkforestares
+
+
+## todo
+
+1. support redstone mainnet 
+2. Add a game parameter configuration module
+
+
+
+## How to run locally
+
+
+
+#### Installing The Correct Node Version Using NVM
+
+The smart contract part requires Node.js v18, while the client part requires Node.js v16
+
+We recommend using NVM to switch between multiple Node.js version on your machine.
+
+```
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
+nvm install
+```
+
+After the installation is finished, you can run `node --version` to verify that you are running v14 or v16
+
+
+
+### 1. local node & contracts
+
+```
+open eth/ 
+nvm use 18 // make sure the node version is 18
+npm install // NOTE: please use npm to install the dependencies, use yarn will have bugs
+npx hardhat node 
+npm run hardhat:dev deploy --whitelist false // open another terminal to deploy
+```
+
+### 2. client 
+
+```
+nvm use 16 // open another terminal to handle client 
+npm install 
+npm run start:dev 
+```
+
+Congratulations, you can now enter the game!  
+
+
+
+
+
 # Dark Forest
 
 Dark Forest is an massively multiplayer online real-time strategy (MMORTS) space conquest game build on top of the Ethereum blockchain.
