@@ -1,8 +1,7 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.6.9;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "./DarkForestTypes.sol";
 import "./DarkForestLazyUpdate.sol";
 
@@ -114,13 +113,8 @@ library DarkForestPlanet {
         _planet.population = _planetType ==
             DarkForestTypes.PlanetType.TRADING_POST
             ? 1500000
-            : SafeMath.div(
-                SafeMath.mul(
-                    _planet.populationCap,
-                    _planetDefaultStats.barbarianPercentage
-                ),
-                100
-            );
+            : (_planet.populationCap *
+                _planetDefaultStats.barbarianPercentage) / 100;
 
         _planet.populationGrowth = isPopGroBoost(_location)
             ? _planetDefaultStats.populationGrowth * 2
@@ -200,9 +194,9 @@ library DarkForestPlanet {
             }
         }
 
-
-            DarkForestTypes.Upgrade memory upgrade
-         = upgrades[_branch][upgradeBranchCurrentLevel];
+        DarkForestTypes.Upgrade memory upgrade = upgrades[_branch][
+            upgradeBranchCurrentLevel
+        ];
         uint256 upgradeCost = (planetDefaultStats[planetLevel].silverCap *
             upgrade.silverCostMultiplier) / 100;
         require(

@@ -73,11 +73,11 @@ const run = async () => {
   const deployerWallet = new HDWalletProvider(DEPLOYER_MNEMONIC, network_url);
   const whitelistControllerWallet = new HDWalletProvider(
     WHITELIST_CONTROLLER_MNEMONIC,
-    network_url
+    network_url,
   );
   const coreControllerWallet = new HDWalletProvider(
     CORE_CONTROLLER_MNEMONIC,
-    network_url
+    network_url,
   );
   const ozAdminWallet = new HDWalletProvider(OZ_ADMIN_MNEMONIC, network_url);
   //await exec(`wget https://faucet.ropsten.be/donate/${wallet.getAddress()}`) // need to add a wallet and get the address.
@@ -91,7 +91,7 @@ const run = async () => {
   } catch {}
   const whitelistControllerAddress = whitelistControllerWallet.getAddress();
   const whitelistContractAddress = await deployWhitelist(
-    whitelistControllerAddress
+    whitelistControllerAddress,
   );
 
   try {
@@ -105,39 +105,39 @@ const run = async () => {
   const coreControllerAddress = coreControllerWallet.getAddress();
   const coreContractAddress = await deployCore(
     coreControllerAddress,
-    whitelistContractAddress
+    whitelistContractAddress,
   );
   fs.writeFileSync(
     isProd
       ? "../client/src/utils/prod_contract_addr.ts"
       : "../client/src/utils/local_contract_addr.ts",
-    `export const contractAddress = '${coreContractAddress}'`
+    `export const contractAddress = '${coreContractAddress}'`,
   );
   await exec("mkdir ../client/public/contracts");
   await exec(
-    "cp build/contracts/DarkForestCore.json ../client/public/contracts/DarkForestCore.json"
+    "cp build/contracts/DarkForestCore.json ../client/public/contracts/DarkForestCore.json",
   );
 
   const ozAdminAddress = ozAdminWallet.getAddress();
 
   await exec(
-    `oz set-admin ${coreControllerAddress} ${ozAdminAddress} --network ${NETWORK} --no-interactive --force`
+    `oz set-admin ${coreControllerAddress} ${ozAdminAddress} --network ${NETWORK} --no-interactive --force`,
   );
 
   console.log("Deploy over. You can quit this process.");
 };
 
 const deployWhitelist = async (
-  whitelistControllerAddress: string
+  whitelistControllerAddress: string,
 ): Promise<string> => {
   await exec(`oz compile --no-interactive`);
   await exec(`oz add Whitelist`);
   await exec(`oz push -n ${NETWORK} --no-interactive --force`);
   const whitelistAddress = await exec(
-    `oz deploy Whitelist -k regular -n ${NETWORK} --no-interactive`
+    `oz deploy Whitelist -k regular -n ${NETWORK} --no-interactive`,
   );
   await exec(
-    `oz send-tx -n ${NETWORK} --to ${whitelistAddress} --method initialize --args ${whitelistControllerAddress},true --no-interactive`
+    `oz send-tx -n ${NETWORK} --to ${whitelistAddress} --method initialize --args ${whitelistControllerAddress},true --no-interactive`,
   );
   console.log(`Whitelist deployed to ${whitelistAddress}`);
   return whitelistAddress;
@@ -145,15 +145,15 @@ const deployWhitelist = async (
 
 const deployCore = async (
   coreControllerAddress: string,
-  whitelistAddress: string
+  whitelistAddress: string,
 ): Promise<string> => {
   await exec(`oz add DarkForestCore --no-interactive`);
   await exec(`oz push -n ${NETWORK} --no-interactive --force`);
   const dfCoreAddress = await exec(
-    `oz deploy DarkForestCore -k upgradeable -n ${NETWORK} --no-interactive`
+    `oz deploy DarkForestCore -k upgradeable -n ${NETWORK} --no-interactive`,
   );
   await exec(
-    `oz send-tx -n ${NETWORK} --to ${dfCoreAddress} --method initialize --args ${coreControllerAddress},${whitelistAddress},${DISABLE_ZK_CHECKS} --no-interactive`
+    `oz send-tx -n ${NETWORK} --to ${dfCoreAddress} --method initialize --args ${coreControllerAddress},${whitelistAddress},${DISABLE_ZK_CHECKS} --no-interactive`,
   );
   console.log(`DFCore deployed to ${dfCoreAddress}.`);
   return dfCoreAddress;

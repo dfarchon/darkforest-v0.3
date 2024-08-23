@@ -1,11 +1,10 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.6.9;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
 // Import base Initializable contract
-import "@openzeppelin/upgrades/contracts/Initializable.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
+
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./Verifier.sol";
 import "./DarkForestStorageV1.sol";
 import "./DarkForestUtils.sol";
@@ -30,8 +29,6 @@ import "./DarkForestInitialize.sol";
 
 contract DarkForestCore is Initializable, DarkForestStorageV1 {
     using ABDKMath64x64 for *;
-    using SafeMath for *;
-    using Math for uint256;
 
     event PlayerInitialized(address player, uint256 loc);
     event ArrivalQueued(uint256 arrivalId);
@@ -72,7 +69,7 @@ contract DarkForestCore is Initializable, DarkForestStorageV1 {
         initializedPlanetCountByLevel = [0, 0, 0, 0, 0, 0, 0, 0];
         for (uint256 i = 0; i < planetLevelThresholds.length; i += 1) {
             cumulativeRarities.push(
-                (2**24 / planetLevelThresholds[i]) * PLANET_RARITY
+                (2 ** 24 / planetLevelThresholds[i]) * PLANET_RARITY
             );
         }
 
@@ -127,17 +124,15 @@ contract DarkForestCore is Initializable, DarkForestStorageV1 {
         gameEndTimestamp = _newGameEnd;
     }
 
-    function changeTarget4RadiusConstant(uint256 _newConstant)
-        public
-        onlyAdmin
-    {
+    function changeTarget4RadiusConstant(
+        uint256 _newConstant
+    ) public onlyAdmin {
         target4RadiusConstant = _newConstant;
     }
 
-    function changeTarget5RadiusConstant(uint256 _newConstant)
-        public
-        onlyAdmin
-    {
+    function changeTarget5RadiusConstant(
+        uint256 _newConstant
+    ) public onlyAdmin {
         target5RadiusConstant = _newConstant;
     }
 
@@ -150,11 +145,10 @@ contract DarkForestCore is Initializable, DarkForestStorageV1 {
         return planetIds.length;
     }
 
-    function bulkGetPlanetIds(uint256 startIdx, uint256 endIdx)
-        public
-        view
-        returns (uint256[] memory ret)
-    {
+    function bulkGetPlanetIds(
+        uint256 startIdx,
+        uint256 endIdx
+    ) public view returns (uint256[] memory ret) {
         // return slice of planetIds array from startIdx through endIdx - 1
         ret = new uint256[](endIdx - startIdx);
         for (uint256 i = startIdx; i < endIdx; i++) {
@@ -162,11 +156,10 @@ contract DarkForestCore is Initializable, DarkForestStorageV1 {
         }
     }
 
-    function bulkGetPlanets(uint256 startIdx, uint256 endIdx)
-        public
-        view
-        returns (DarkForestTypes.Planet[] memory ret)
-    {
+    function bulkGetPlanets(
+        uint256 startIdx,
+        uint256 endIdx
+    ) public view returns (DarkForestTypes.Planet[] memory ret) {
         // return array of planets corresponding to planetIds[startIdx] through planetIds[endIdx - 1]
         ret = new DarkForestTypes.Planet[](endIdx - startIdx);
         for (uint256 i = startIdx; i < endIdx; i++) {
@@ -174,11 +167,10 @@ contract DarkForestCore is Initializable, DarkForestStorageV1 {
         }
     }
 
-    function bulkGetPlanetsExtendedInfo(uint256 startIdx, uint256 endIdx)
-        public
-        view
-        returns (DarkForestTypes.PlanetExtendedInfo[] memory ret)
-    {
+    function bulkGetPlanetsExtendedInfo(
+        uint256 startIdx,
+        uint256 endIdx
+    ) public view returns (DarkForestTypes.PlanetExtendedInfo[] memory ret) {
         // return array of planets corresponding to planetIds[startIdx] through planetIds[endIdx - 1]
         ret = new DarkForestTypes.PlanetExtendedInfo[](endIdx - startIdx);
         for (uint256 i = startIdx; i < endIdx; i++) {
@@ -190,11 +182,10 @@ contract DarkForestCore is Initializable, DarkForestStorageV1 {
         return playerIds.length;
     }
 
-    function bulkGetPlayers(uint256 startIdx, uint256 endIdx)
-        public
-        view
-        returns (address[] memory ret)
-    {
+    function bulkGetPlayers(
+        uint256 startIdx,
+        uint256 endIdx
+    ) public view returns (address[] memory ret) {
         // return slice of players array from startIdx through endIdx - 1
         ret = new address[](endIdx - startIdx);
         for (uint256 i = startIdx; i < endIdx; i++) {
@@ -218,11 +209,9 @@ contract DarkForestCore is Initializable, DarkForestStorageV1 {
         return cumulativeRarities;
     }
 
-    function getPlanetArrivals(uint256 _location)
-        public
-        view
-        returns (DarkForestTypes.ArrivalData[] memory ret)
-    {
+    function getPlanetArrivals(
+        uint256 _location
+    ) public view returns (DarkForestTypes.ArrivalData[] memory ret) {
         uint256 arrivalCount = 0;
         for (uint256 i = 0; i < planetEvents[_location].length; i += 1) {
             if (
@@ -245,16 +234,14 @@ contract DarkForestCore is Initializable, DarkForestStorageV1 {
         }
     }
 
-    function bulkGetPlanetArrivals(uint256 startIdx, uint256 endIdx)
-        public
-        view
-        returns (DarkForestTypes.ArrivalData[][] memory)
-    {
+    function bulkGetPlanetArrivals(
+        uint256 startIdx,
+        uint256 endIdx
+    ) public view returns (DarkForestTypes.ArrivalData[][] memory) {
         // return array of planets corresponding to planetIds[startIdx] through planetIds[endIdx - 1]
 
-
-            DarkForestTypes.ArrivalData[][] memory ret
-         = new DarkForestTypes.ArrivalData[][](endIdx - startIdx);
+        DarkForestTypes.ArrivalData[][]
+            memory ret = new DarkForestTypes.ArrivalData[][](endIdx - startIdx);
         for (uint256 i = startIdx; i < endIdx; i++) {
             ret[i - startIdx] = getPlanetArrivals(planetIds[i]);
         }
@@ -266,11 +253,10 @@ contract DarkForestCore is Initializable, DarkForestStorageV1 {
         view
         returns (DarkForestTypes.PlanetDefaultStats[] memory)
     {
-
-            DarkForestTypes.PlanetDefaultStats[] memory ret
-         = new DarkForestTypes.PlanetDefaultStats[](
-            planetLevelThresholds.length
-        );
+        DarkForestTypes.PlanetDefaultStats[]
+            memory ret = new DarkForestTypes.PlanetDefaultStats[](
+                planetLevelThresholds.length
+            );
         for (uint256 i = 0; i < planetLevelThresholds.length; i += 1) {
             ret[i] = planetDefaultStats[i];
         }
@@ -326,11 +312,11 @@ contract DarkForestCore is Initializable, DarkForestStorageV1 {
             uint256 _level,
             DarkForestTypes.PlanetResource _resource
         ) = DarkForestUtils._getPlanetLevelAndResource(
-            _location,
-            SILVER_RARITY,
-            planetLevelThresholds,
-            planetDefaultStats
-        );
+                _location,
+                SILVER_RARITY,
+                planetLevelThresholds,
+                planetDefaultStats
+            );
 
         DarkForestTypes.PlanetType _type = _getPlanetType();
 
@@ -356,12 +342,9 @@ contract DarkForestCore is Initializable, DarkForestStorageV1 {
     /// Game Mechanics ///
     //////////////////////
 
-    function refreshPlanet(uint256 _location)
-        public
-        onlyWhitelisted
-        notPaused
-        notEnded
-    {
+    function refreshPlanet(
+        uint256 _location
+    ) public onlyWhitelisted notPaused notEnded {
         require(
             planetsExtendedInfo[_location].isInitialized,
             "Planet has not been initialized"
@@ -492,11 +475,10 @@ contract DarkForestCore is Initializable, DarkForestStorageV1 {
         emit ArrivalQueued(planetEventsCount - 1);
     }
 
-    function upgradePlanet(uint256 _location, uint256 _branch)
-        public
-        notPaused
-        notEnded
-    {
+    function upgradePlanet(
+        uint256 _location,
+        uint256 _branch
+    ) public notPaused notEnded {
         // _branch specifies which of the three upgrade branches player is leveling up
         // 0 improves silver production and capacity
         // 1 improves population

@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.6.9;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.8.0;
 
 // Libraries
 import "./ABDKMath64x64.sol";
@@ -122,9 +122,9 @@ library DarkForestInitialize {
         );
     }
 
-    function initializeUpgrades(DarkForestTypes.Upgrade[4][3] storage upgrades)
-        public
-    {
+    function initializeUpgrades(
+        DarkForestTypes.Upgrade[4][3] storage upgrades
+    ) public {
         upgrades[0][0] = DarkForestTypes.Upgrade({
             popCapMultiplier: 100,
             popGroMultiplier: 100,

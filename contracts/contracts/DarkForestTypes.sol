@@ -1,10 +1,18 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.6.9;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.8.0;
 
 library DarkForestTypes {
-    enum PlanetResource {NONE, SILVER}
-    enum PlanetEventType {ARRIVAL}
-    enum PlanetType {PLANET, TRADING_POST}
+    enum PlanetResource {
+        NONE,
+        SILVER
+    }
+    enum PlanetEventType {
+        ARRIVAL
+    }
+    enum PlanetType {
+        PLANET,
+        TRADING_POST
+    }
 
     struct Planet {
         address owner;

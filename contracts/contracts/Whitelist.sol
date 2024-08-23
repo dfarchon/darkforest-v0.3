@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.6.0;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
 // Import base Initializable contract
-import "@openzeppelin/upgrades/contracts/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract Whitelist is Initializable {
     bool whitelistEnabled;
@@ -25,10 +25,10 @@ contract Whitelist is Initializable {
         admin = _newAdmin;
     }
 
-    function initialize(address _admin, bool _whitelistEnabled)
-        public
-        initializer
-    {
+    function initialize(
+        address _admin,
+        bool _whitelistEnabled
+    ) public initializer {
         admin = _admin;
         whitelistEnabled = _whitelistEnabled;
     }
@@ -74,8 +74,9 @@ contract Whitelist is Initializable {
         allowedAccounts[toRemove] = false;
         for (uint256 i = 0; i < allowedAccountsArray.length; i++) {
             if (allowedAccountsArray[i] == toRemove) {
-                allowedAccountsArray[i] = allowedAccountsArray[allowedAccountsArray
-                    .length - 1];
+                allowedAccountsArray[i] = allowedAccountsArray[
+                    allowedAccountsArray.length - 1
+                ];
                 allowedAccountsArray.pop();
             }
         }

@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.6.9;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.8.0;
 
 // Libraries
 import "./ABDKMath64x64.sol";
@@ -12,7 +12,7 @@ library DarkForestUtils {
         uint256 _endByte
     ) public pure returns (uint256 _byteUInt) {
         for (uint256 i = _startByte; i <= _endByte; i++) {
-            _byteUInt += uint256(uint8(_b[i])) * (256**(_endByte - i));
+            _byteUInt += uint256(uint8(_b[i])) * (256 ** (_endByte - i));
         }
     }
 
