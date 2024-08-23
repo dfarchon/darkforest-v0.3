@@ -8,7 +8,7 @@
     "format": "prettier --write .",
     "prettier": "prettier --write --plugin=prettier-plugin-solidity 'contracts/**/*.sol'",
     "compile": "hardhat compile",
-    "hardhat:dev": "hardhat --network hardhat"
+    "hardhat:dev": "hardhat --network localhost"
   },
   "keywords": [],
   "author": "",

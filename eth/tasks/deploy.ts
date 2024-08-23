@@ -150,14 +150,13 @@ async function deploy(
   return;
 }
 
-task("client:config", "client config")
-  .setAction(clientConfig);
+task("client:config", "client config").setAction(clientConfig);
 
-async function clientConfig(){
-    await exec("mkdir ../client/public/contracts");
-    await exec(
-      "cp ./artifacts/contracts/DarkForestCore.sol/DarkForestCore.json ../client/public/contracts/DarkForestCore.json",
-    );
+async function clientConfig() {
+  await exec("mkdir ../client/public/contracts");
+  await exec(
+    "cp ./artifacts/contracts/DarkForestCore.sol/DarkForestCore.json ../client/public/contracts/DarkForestCore.json",
+  );
 }
 
 export async function deployWhitelist(
@@ -169,8 +168,8 @@ export async function deployWhitelist(
   const contract = await factory.deploy();
   await contract.waitForDeployment();
 
-  const tx =await contract.initialize(whitelistControllerAddress, whitelist);
-  console.log('initialize tx hash: ')
+  const tx = await contract.initialize(whitelistControllerAddress, whitelist);
+  console.log("initialize tx hash: ");
   console.log(tx.hash);
   console.log("Whitelist contract is deployed to ", contract.target);
   return contract;
@@ -182,36 +181,34 @@ export async function deployCore(
   DISABLE_ZK_CHECKS: boolean,
   hre: HardhatRuntimeEnvironment,
 ): Promise<string> {
+  const factory1 = await hre.ethers.getContractFactory("DarkForestInitialize");
+  const contract1 = await factory1.deploy();
+  await contract1.waitForDeployment();
 
+  const factory2 = await hre.ethers.getContractFactory("DarkForestLazyUpdate");
+  const contract2 = await factory2.deploy();
+  await contract2.waitForDeployment();
 
- const factory1 =await hre.ethers.getContractFactory('DarkForestInitialize');
- const contract1 = await factory1.deploy();
- await contract1.waitForDeployment();  
+  const factory3 = await hre.ethers.getContractFactory("DarkForestPlanet");
+  const contract3 = await factory3.deploy();
+  await contract3.waitForDeployment();
 
- const factory2 = await hre.ethers.getContractFactory('DarkForestLazyUpdate');
- const contract2 = await factory2.deploy();
- await contract2.waitForDeployment();
+  const factory4 = await hre.ethers.getContractFactory("DarkForestUtils");
+  const contract4 = await factory4.deploy();
+  await contract4.waitForDeployment();
 
- const factory3 = await hre.ethers.getContractFactory('DarkForestPlanet');
- const contract3 = await factory3.deploy();
- await contract3.waitForDeployment();
+  const factory5 = await hre.ethers.getContractFactory("Verifier");
+  const contract5 = await factory5.deploy();
+  await contract5.waitForDeployment();
 
- const factory4 = await hre.ethers.getContractFactory('DarkForestUtils');
- const contract4 = await factory4.deploy();
- await contract4.waitForDeployment();
-
- const factory5 = await hre.ethers.getContractFactory('Verifier');
- const contract5 = await factory5.deploy();
- await contract5.waitForDeployment();
-
-  const factory = await hre.ethers.getContractFactory("DarkForestCore",{
-    libraries:{
-        DarkForestInitialize: contract1.target,
-        DarkForestLazyUpdate: contract2.target,
-        DarkForestPlanet: contract3.target,
-        DarkForestUtils: contract4.target,
-        Verifier: contract4.target
-    }
+  const factory = await hre.ethers.getContractFactory("DarkForestCore", {
+    libraries: {
+      DarkForestInitialize: contract1.target,
+      DarkForestLazyUpdate: contract2.target,
+      DarkForestPlanet: contract3.target,
+      DarkForestUtils: contract4.target,
+      Verifier: contract5.target,
+    },
   });
   const contract = await factory.deploy();
   await contract.waitForDeployment();
@@ -221,7 +218,7 @@ export async function deployCore(
     whitelistAddress,
     DISABLE_ZK_CHECKS,
   );
-  console.log('initialize tx hash: ')
+  console.log("initialize tx hash: ");
   console.log(tx.hash);
   console.log(`DFCore deployed to ${contract.target}.`);
   return contract.target.toString();

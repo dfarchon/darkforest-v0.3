@@ -329,8 +329,9 @@ export default function GameLandingPage(_props: { replayMode: boolean }) {
     terminalEmitter.newline();
 
     const address = await getAddress();
-    const isWhitelisted = await isAddressWhitelisted(address);
-
+    // const isWhitelisted = await isAddressWhitelisted(address);
+    const isWhitelisted = true;
+    
     terminalEmitter.shell('df join v0.3');
     terminalEmitter.print('Checking if whitelisted... (address ');
     terminalEmitter.print(address, TerminalTextStyle.White);

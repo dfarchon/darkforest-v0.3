@@ -4,10 +4,10 @@ import "@nomicfoundation/hardhat-toolbox";
 import "./tasks/deploy";
 
 const config: HardhatUserConfig = {
-  defaultNetwork: "hardhat",
+  defaultNetwork: "localhost",
   networks: {
     localhost: {
-      url: "http://localhost:8545/",
+      url: "http://127.0.0.1:8545/",
       accounts: {
         // Same mnemonic used in the .env.example
         mnemonic:

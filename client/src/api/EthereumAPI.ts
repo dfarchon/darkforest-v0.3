@@ -130,6 +130,11 @@ class EthereumAPI extends EventEmitter {
     const signer: providers.JsonRpcSigner = provider.getSigner();
     const account: EthAddress = address(await signer.getAddress());
 
+    //todo: test 
+    const network = await provider.getNetwork();
+    console.log('Chain ID:', network.chainId);
+
+
     const isProd = process.env.NODE_ENV === 'production';
     const contractAddress = isProd
       ? require('../utils/prod_contract_addr').contractAddress
@@ -395,7 +400,9 @@ class EthereumAPI extends EventEmitter {
       TerminalTextStyle.Sub
     );
 
-    const contract = this.contract;
+    const contract = this.contract;  
+
+
     const res = await Promise.all([
       contract.PERLIN_THRESHOLD(),
       contract.PLANET_RARITY(),
