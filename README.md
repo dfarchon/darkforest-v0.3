@@ -55,3 +55,18 @@ We're actively seeking both funding and developers to help bring our future deve
 - DFArchon Discord: [Join our server](https://discord.gg/XpBPEnsvgX)
 - DFArchon Telegram: [Join our channel](https://t.me/darkforestares)
 
+
+
+# Change Log
+
+the differences between the original v0.3 and the 2025 version.
+
+
+In the 2025 update, we first upgraded the Node.js version from 12 to 18. Based on this, we accordingly updated the smart contracts and front-end dependencies.
+
+We migrated the smart contract development environment from Ganache and Truffle to Hardhat. Leveraging the Hardhat framework, we also updated the deployment scripts.
+
+For the smart contracts, we upgraded the Solidity version from 0.6 to 0.8 and updated the primary OpenZeppelin dependency to version 4.8. Additionally, we refined the contract details in accordance with the language features of different Solidity versions.
+
+On the front end, we updated the dependencies while keeping the overall logic unchanged.
+
