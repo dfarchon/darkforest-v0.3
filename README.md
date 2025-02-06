@@ -1,72 +1,60 @@
+# Dark Forest v0.3 (2025)
 
+A revival of the legendary 2020 Dark Forest game, updated for 2025. Dark Forest is a massively multiplayer online real-time strategy (MMORTS) space conquest game built on the Ethereum blockchain.
 
-# Dark Forest v0.3 (2024 version)
+## 🚀 Quick Start
 
-Let’s revisit the summer of 2020 together.
+### Prerequisites
 
-We ([DFArchon](https://x.com/DFArchon)) have updated the smart contracts and development environment for the 2024 version.
+- Node.js v18 (Required for both smart contracts and client)
+- npm (Do not use yarn - there are known compatibility issues)
+- nvm (Node Version Manager)
 
-This work is a step toward our upcoming goal of porting Dark Forest to MUD 🦑.
-
-To bring our future development plans to life, we are seeking both funding and developers.
-
-We warmly invite you to reach out and connect with us.
-
-Thank you for your support.
-
-Discord: https://discord.gg/XpBPEnsvgX
-
-Telegram: https://t.me/darkforestares
-
-
-## todo
-
-1. support redstone mainnet 
-2. Add a game parameter configuration module
-
-
-
-## How to run locally
-
-
-
-#### Installing The Correct Node Version Using NVM
-
-The smart contract part requires Node.js v18, while the client part requires Node.js v16
-
-We recommend using NVM to switch between multiple Node.js version on your machine.
-
-```
+### Installing NVM
+```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
-nvm install
 ```
 
-After the installation is finished, you can run `node --version` to verify that you are running v14 or v16
+### Setting Up the Project
 
-
-
-### 1. local node & contracts
-
-```
-open eth/ 
-nvm use 18 // make sure the node version is 18
-npm install // NOTE: please use npm to install the dependencies, use yarn will have bugs
-npx hardhat node 
-npx hardhat --network localhost deploy --whitelist false // open another terminal to deploy
+1. **Smart Contracts Setup**
+```bash
+cd eth/
+nvm use 18
+npm install
+npx hardhat node
+# In a new terminal:
+npx hardhat --network localhost deploy --whitelist false
 ```
 
-### 2. client 
-
+2. **Client Setup**
+```bash
+cd client/
+nvm use 18
+npm install
+npm run start:dev
 ```
-nvm use 16 // open another terminal to handle client 
-npm install 
-npm run start:dev 
-```
 
-Congratulations, you can now enter the game!  
+The game should now be running at `http://localhost:8081`!
+
+## 🏗️ Project Structure
+
+- `/client` - Game UI and frontend logic
+- `/eth` - Smart contract code
+- `/circuits` - zkSNARKS circuits (using Circom)
 
 
+## 🤝 Contributing
 
+We're actively seeking both funding and developers to help bring our future development plans to life.
+
+## 📞 Connect With Us
+
+- Discord: [Join our server](https://discord.gg/XpBPEnsvgX)
+- Telegram: [Join our channel](https://t.me/darkforestares)
+
+
+> **Note**: This is the original 2020 README preserved for historical reference. See above for current setup instructions.
 
 
 # Dark Forest
