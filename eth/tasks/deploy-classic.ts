@@ -88,7 +88,7 @@ const run = async () => {
   }
   try {
     await exec("oz init darkforest 0.3");
-  } catch {}
+  } catch { }
   const whitelistControllerAddress = whitelistControllerWallet.getAddress();
   const whitelistContractAddress = await deployWhitelist(
     whitelistControllerAddress,
@@ -100,7 +100,7 @@ const run = async () => {
       project_id: PROJECT_ID,
       contract_address: whitelistContractAddress,
     });
-  } catch {}
+  } catch { }
 
   const coreControllerAddress = coreControllerWallet.getAddress();
   const coreContractAddress = await deployCore(

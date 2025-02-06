@@ -130,7 +130,7 @@ class EthereumAPI extends EventEmitter {
     const signer: providers.JsonRpcSigner = provider.getSigner();
     const account: EthAddress = address(await signer.getAddress());
 
-    //todo: test 
+    //NOTICE: show chain id
     const network = await provider.getNetwork();
     console.log('Chain ID:', network.chainId);
 
@@ -400,7 +400,7 @@ class EthereumAPI extends EventEmitter {
       TerminalTextStyle.Sub
     );
 
-    const contract = this.contract;  
+    const contract = this.contract;
 
 
     const res = await Promise.all([

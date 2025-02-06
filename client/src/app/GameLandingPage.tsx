@@ -329,6 +329,8 @@ export default function GameLandingPage(_props: { replayMode: boolean }) {
     terminalEmitter.newline();
 
     const address = await getAddress();
+
+    // NOTICE: set whitelist
     // const isWhitelisted = await isAddressWhitelisted(address);
     const isWhitelisted = true;
     

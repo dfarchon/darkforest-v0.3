@@ -5,6 +5,7 @@ import { Network } from '@ethersproject/networks';
 import { getProvider, getAddress } from '../utils/EthereumUtils';
 import TerminalEmitter, { TerminalTextStyle } from '../utils/TerminalEmitter';
 import { EthAddress } from '../_types/global/GlobalTypes';
+import { ExternalProvider } from '@ethersproject/providers';
 
 export enum Incompatibility {
   NoIDB = 'no_idb',
@@ -131,7 +132,7 @@ const checkFeatures = async (): Promise<FeatureList> => {
       return incompats;
     }
 
-    const provider = new providers.Web3Provider(await detectEthereumProvider());
+    const provider = new providers.Web3Provider(window.ethereum as ExternalProvider);
 
     incompats[Incompatibility.NotRopsten] = !(await isRospten(provider));
     incompats[
@@ -153,9 +154,9 @@ export const enableEthereum = () => {
     terminalEmitter.println('Enable Ethereum failed.', TerminalTextStyle.Red);
     terminalEmitter.println(
       "This is a known issue for some Brave Browser users. If you're on Brave Browser, " +
-        'disable the Brave crypto wallet by going to brave://settings, ' +
-        'scrolling down to "Extensions", and selecting "MetaMask" as your Web3 Provider. ' +
-        'Afterwards, refresh the page.'
+      'disable the Brave crypto wallet by going to brave://settings, ' +
+      'scrolling down to "Extensions", and selecting "MetaMask" as your Web3 Provider. ' +
+      'Afterwards, refresh the page.'
     );
   }
 };
