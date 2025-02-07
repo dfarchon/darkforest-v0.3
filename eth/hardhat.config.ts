@@ -1,5 +1,10 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
+import * as dotenv from "dotenv";
+
+dotenv.config();
+
+const MNEMONIC = process.env.DEPLOYER_MNEMONIC || "change typical hire slam amateur loan grid fix drama electric seed label";
 
 import "./tasks/deploy";
 
@@ -9,18 +14,24 @@ const config: HardhatUserConfig = {
     localhost: {
       url: "http://127.0.0.1:8545/",
       accounts: {
-        // Same mnemonic used in the .env.example
-        mnemonic:
-          "change typical hire slam amateur loan grid fix drama electric seed label",
+        mnemonic: MNEMONIC,
       },
       chainId: 31337,
+    },
+    holesky: {
+      url: "https://rpc.ankr.com/eth_holesky",
+      accounts: {
+        mnemonic: MNEMONIC,
+      },
+      chainId: 17000,
+      gasPrice: 3000000000,     // 3 Gwei fixed gas price
+      gasMultiplier: 1.5,       // Increased to 1.5x
+      timeout: 120000,          // 2 minutes timeout
     },
     // Used when you dont specify a network on command line, like in tests
     hardhat: {
       accounts: {
-        // Same mnemonic used in the .env.example
-        mnemonic:
-          "change typical hire slam amateur loan grid fix drama electric seed label",
+        mnemonic: MNEMONIC,
       },
       blockGasLimit: 16777215,
       mining: {

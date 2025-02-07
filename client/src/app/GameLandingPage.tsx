@@ -264,11 +264,11 @@ export default function GameLandingPage(_props: { replayMode: boolean }) {
     }
 
     if (issues.includes(Incompatibility.NotRopsten)) {
-      terminalEmitter.print('Connecting to Ropsten Testnet');
+      terminalEmitter.print('Connecting to Holesky Testnet');
       await animEllipsis();
       terminalEmitter.print(' ');
       terminalEmitter.println(
-        'ERROR: Ropsten not selected. Please select Ropsten and try again.',
+        'ERROR: Holesky not selected. Please select Holesky and try again.',
         TerminalTextStyle.Red
       );
     } else {
@@ -281,10 +281,10 @@ export default function GameLandingPage(_props: { replayMode: boolean }) {
         TerminalTextStyle.White
       );
       terminalEmitter.newline();
-      terminalEmitter.print('Falling back to Ropsten');
+      terminalEmitter.print('Falling back to Holesky');
       await animEllipsis();
       terminalEmitter.print(' ');
-      terminalEmitter.println('Ropsten selected.', TerminalTextStyle.White);
+      terminalEmitter.println('Holesky selected.', TerminalTextStyle.White);
     }
 
     if (issues.length > 0) {
