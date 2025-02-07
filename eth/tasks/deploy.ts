@@ -48,21 +48,24 @@ task("deploy", "deploy all contracts")
   .setAction(deploy);
 
 async function deploy(
-  args: { whitelist: boolean; fund: number;  },
+  args: { whitelist: boolean; fund: number },
   hre: HardhatRuntimeEnvironment,
 ) {
-  const isDev =
-    hre.network.name === "hardhat" || hre.network.name === "localhost";
+  console.log("\n🚀 Starting Dark Forest deployment...");
+  console.log("--------------------");
+  console.log(`Network: ${hre.network.name}`);
+  console.log(`Whitelist enabled: ${args.whitelist}`);
 
+  const isDev = hre.network.name === "hardhat" || hre.network.name === "localhost";
+  console.log(`Environment: ${isDev ? "Development" : "Production"}`);
+
+  // Check environment variables
+  console.log("\n📋 Checking environment variables...");
   const DEPLOYER_MNEMONIC = process.env.DEPLOYER_MNEMONIC;
-
   const PROJECT_ID = process.env.PROJECT_ID;
-
-  const DISABLE_ZK_CHECKS =
-    process.env.DISABLE_ZK_CHECKS === undefined
-      ? undefined
-      : process.env.DISABLE_ZK_CHECKS === "true";
-
+  const DISABLE_ZK_CHECKS = process.env.DISABLE_ZK_CHECKS === undefined
+    ? undefined
+    : process.env.DISABLE_ZK_CHECKS === "true";
   const NETWORK_URL = process.env.NETWORK_URL;
 
   if (
@@ -92,7 +95,7 @@ async function deploy(
     whitelistEnabled = args.whitelist;
   }
 
-  console.log('whitelistEnabled:',whitelistEnabled);
+  console.log('whitelistEnabled:', whitelistEnabled);
 
   if (DISABLE_ZK_CHECKS) {
     console.log("WARNING: ZK checks disabled.");
@@ -101,15 +104,13 @@ async function deploy(
   // need to force a compile for tasks
   await hre.run("compile");
 
-  // Were only using one account, getSigners()[0], the deployer. Becomes the ProxyAdmin
+  console.log("\n💰 Checking deployer balance...");
   const [deployer] = await hre.ethers.getSigners();
-  // give contract administration over to an admin adress if was provided, or use deployer
-  const controllerWalletAddress = deployer.address;
+  const balance = await deployer.provider.getBalance(deployer.address);
+  console.log(`Deployer address: ${deployer.address}`);
+  console.log(`Balance: ${hre.ethers.formatEther(balance)} ETH`);
 
   const requires = hre.ethers.parseEther("0.1");
-  // Retrieve the balance of the deployer's address using the provider
-  const balance = await deployer.provider.getBalance(deployer.address);
-
   // Only when deploying to production, give the deployer wallet money,
   // in order for it to be able to deploy the contracts
   if (balance < requires) {
@@ -120,26 +121,32 @@ async function deploy(
     );
   }
 
-  // deploy the whitelist contract
+  console.log("\n📄 Deploying Whitelist contract...");
   const whitelistContract = await deployWhitelist(
-    controllerWalletAddress,
+    deployer.address,
     whitelistEnabled,
     hre,
   );
+  console.log(`✅ Whitelist deployed to: ${whitelistContract.target}`);
+
+  console.log("\n📄 Deploying Core contract...");
+  const coreContractAddress = await deployCore(
+    deployer.address,
+    whitelistContract.target.toString(),
+    DISABLE_ZK_CHECKS,
+    hre,
+  );
+  console.log(`✅ Core deployed to: ${coreContractAddress}`);
+
+  console.log("\n💾 Updating configuration files...");
   try {
     writeEnv(`../whitelist/${isDev ? "dev" : "prod"}.autogen.env`, {
       mnemonic: DEPLOYER_MNEMONIC,
       project_id: PROJECT_ID,
       contract_address: whitelistContract.target.toString(),
     });
-  } catch {}
+  } catch { }
 
-  const coreContractAddress = await deployCore(
-    controllerWalletAddress,
-    whitelistContract.target.toString(),
-    DISABLE_ZK_CHECKS,
-    hre,
-  );
   fs.writeFileSync(
     isDev === false
       ? "../client/src/utils/prod_contract_addr.ts"
@@ -147,7 +154,15 @@ async function deploy(
     `export const contractAddress = '${coreContractAddress}'`,
   );
 
-  console.log("Deploy over. You can quit this process.");
+  console.log("\n🎉 Deployment complete!");
+  console.log("--------------------");
+  console.log("Summary:");
+  console.log(`Network: ${hre.network.name}`);
+  console.log(`Whitelist contract: ${whitelistContract.target}`);
+  console.log(`Core contract: ${coreContractAddress}`);
+  console.log(`Whitelist enabled: ${whitelistEnabled}`);
+  console.log(`ZK checks disabled: ${DISABLE_ZK_CHECKS}`);
+  console.log("--------------------\n");
 
   return;
 }
@@ -183,26 +198,39 @@ export async function deployCore(
   DISABLE_ZK_CHECKS: boolean,
   hre: HardhatRuntimeEnvironment,
 ): Promise<string> {
+  console.log("\n📦 Deploying library contracts...");
+
+  console.log("1/5 Deploying DarkForestInitialize...");
   const factory1 = await hre.ethers.getContractFactory("DarkForestInitialize");
   const contract1 = await factory1.deploy();
   await contract1.waitForDeployment();
+  console.log(`✅ DarkForestInitialize deployed to: ${contract1.target}`);
 
+  console.log("\n2/5 Deploying DarkForestLazyUpdate...");
   const factory2 = await hre.ethers.getContractFactory("DarkForestLazyUpdate");
   const contract2 = await factory2.deploy();
   await contract2.waitForDeployment();
+  console.log(`✅ DarkForestLazyUpdate deployed to: ${contract2.target}`);
 
+  console.log("\n3/5 Deploying DarkForestPlanet...");
   const factory3 = await hre.ethers.getContractFactory("DarkForestPlanet");
   const contract3 = await factory3.deploy();
   await contract3.waitForDeployment();
+  console.log(`✅ DarkForestPlanet deployed to: ${contract3.target}`);
 
+  console.log("\n4/5 Deploying DarkForestUtils...");
   const factory4 = await hre.ethers.getContractFactory("DarkForestUtils");
   const contract4 = await factory4.deploy();
   await contract4.waitForDeployment();
+  console.log(`✅ DarkForestUtils deployed to: ${contract4.target}`);
 
+  console.log("\n5/5 Deploying Verifier...");
   const factory5 = await hre.ethers.getContractFactory("Verifier");
   const contract5 = await factory5.deploy();
   await contract5.waitForDeployment();
+  console.log(`✅ Verifier deployed to: ${contract5.target}`);
 
+  console.log("\n🔨 Deploying main DarkForestCore contract...");
   const factory = await hre.ethers.getContractFactory("DarkForestCore", {
     libraries: {
       DarkForestInitialize: contract1.target,
@@ -215,13 +243,16 @@ export async function deployCore(
   const contract = await factory.deploy();
   await contract.waitForDeployment();
 
+  console.log("\n🔧 Initializing DarkForestCore...");
   const tx = await contract.initialize(
     coreControllerAddress,
     whitelistAddress,
     DISABLE_ZK_CHECKS,
   );
-  console.log("initialize tx hash: ");
-  console.log(tx.hash);
-  console.log(`DFCore deployed to ${contract.target}.`);
+  console.log("Initialize transaction hash:", tx.hash);
+  await tx.wait();
+  console.log("✅ Initialization complete");
+
+  console.log(`\n🎯 DarkForestCore deployed to: ${contract.target}`);
   return contract.target.toString();
 }

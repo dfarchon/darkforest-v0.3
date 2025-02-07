@@ -95,7 +95,11 @@ const isRospten = async (provider: providers.Web3Provider) => {
   if (process.env.NODE_ENV !== 'production') {
     return true;
   }
-  return (await getNetworkType(provider)).name === 'ropsten';
+
+  const network = await getNetworkType(provider);
+  // NOTICE: Holesky chainId is 17000, don't know why name is "unknown"
+  return network.chainId === 17000;
+  return (await getNetworkType(provider)).name === 'holesky';
 };
 
 const isFirefox = () => navigator.userAgent.indexOf('Firefox') > 0;
