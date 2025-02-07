@@ -91,7 +91,7 @@ export default function GameLandingPage(_props: { replayMode: boolean }) {
   const getUserInput = async () => {
     const terminalEmitter = TerminalEmitter.getInstance();
     terminalEmitter.enableUserInput();
-    const ret: string = await new Promise((resolve) => {
+    const ret: string = await new Promise<string>((resolve) => {
       terminalEmitter.once(TerminalEvent.UserEnteredInput, resolve);
     });
     terminalEmitter.disableUserInput();
@@ -126,7 +126,7 @@ export default function GameLandingPage(_props: { replayMode: boolean }) {
     emailInputRef.current.value = email;
     emailFormRef.current.submit();
     if (!popup) return;
-    await new Promise((resolve) => {
+    await new Promise<void>((resolve) => {
       const interval = setInterval(() => {
         if (popup.closed) {
           resolve();
@@ -333,7 +333,7 @@ export default function GameLandingPage(_props: { replayMode: boolean }) {
     // NOTICE: set whitelist
     // const isWhitelisted = await isAddressWhitelisted(address);
     const isWhitelisted = true;
-    
+
     terminalEmitter.shell('df join v0.3');
     terminalEmitter.print('Checking if whitelisted... (address ');
     terminalEmitter.print(address, TerminalTextStyle.White);

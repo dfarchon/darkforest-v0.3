@@ -20,8 +20,7 @@ export enum Incompatibility {
 export const hasTouchscreen = () => {
   return (
     'ontouchstart' in window ||
-    navigator.maxTouchPoints > 0 ||
-    navigator.msMaxTouchPoints > 0
+    navigator.maxTouchPoints > 0
   );
 };
 
@@ -132,7 +131,12 @@ const checkFeatures = async (): Promise<FeatureList> => {
       return incompats;
     }
 
-    const provider = new providers.Web3Provider(window.ethereum as ExternalProvider);
+    const detectedProvider = await detectEthereumProvider();
+    if (!detectedProvider) {
+      throw new Error('No Ethereum provider detected');
+    }
+
+    const provider = new providers.Web3Provider(detectedProvider as ExternalProvider);
 
     incompats[Incompatibility.NotRopsten] = !(await isRospten(provider));
     incompats[

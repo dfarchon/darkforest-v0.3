@@ -93,23 +93,22 @@ function TerminalFragment({
   if (idx < fragmentNo) {
     return <span>{fragment.fragment}</span>;
   }
+
+  if (idx === fragmentNo && !fragment.skipTyping && !skipAllTyping) {
+    return (
+      <Typist
+        onCharacterTyped={onCharTyped}
+        onTypingDone={() => setFragmentNo(x => x + 1)}
+        {...fragment.typistProps}
+      >
+        {fragment.fragment}
+      </Typist>
+    );
+  }
+
   if (idx === fragmentNo) {
-    if (!fragment.skipTyping && !skipAllTyping) {
-      return (
-        <Typist
-          onCharacterTyped={onCharTyped}
-          onTypingDone={() => {
-            setFragmentNo((x) => x + 1);
-          }}
-          {...fragment.typistProps}
-        >
-          {fragment.fragment}
-        </Typist>
-      );
-    } else {
-      setFragmentNo((x) => x + 1);
-      return <span></span>;
-    }
+    // Use setTimeout to avoid setState during render
+    setTimeout(() => setFragmentNo(x => x + 1), 0);
   }
 
   return <span></span>;

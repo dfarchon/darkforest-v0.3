@@ -59,7 +59,7 @@ declare global {
   interface Window {
     // gameManager: any;
     // mimcHash: any;
-    ethereum: WindowEthereumObject;
+    ethereum?: WindowEthereumObject;
     // from websnark's function injected into window
     genZKSnarkProof: (
       witness: ArrayBuffer,

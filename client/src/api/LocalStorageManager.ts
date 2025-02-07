@@ -146,9 +146,9 @@ class LocalStorageManager {
     }
     return null;
   }
-
   public async setHomeCoords(coords: WorldCoords): Promise<void> {
-    await this.setKey('homeCoords', stringify(coords));
+    if (!coords) throw new Error('coords cannot be undefined');
+    await this.setKey('homeCoords', JSON.stringify(coords));
   }
 
   public hasMinedChunk(chunkLoc: ChunkFootprint): boolean {
@@ -158,12 +158,14 @@ class LocalStorageManager {
         chunkLoc.bottomLeft,
         sideLength
       );
-      if (this.getChunkById(getChunkKey(testChunkLoc))) {
+      const chunkKey = getChunkKey(testChunkLoc);
+      if (chunkKey && this.getChunkById(chunkKey)) {
         return true;
       }
       sideLength *= 2;
     }
-    return !!this.chunkMap.get(getChunkKey(chunkLoc));
+    const finalChunkKey = getChunkKey(chunkLoc);
+    return !!finalChunkKey && !!this.chunkMap.get(finalChunkKey);
   }
 
   private getChunkById(chunkId: string): ExploredChunkData | null {

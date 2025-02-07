@@ -88,7 +88,7 @@ export default function LeaderboardPane({
   setRank: (x: number) => void;
 }) {
   const uiManager = useContext<GameUIManager | null>(GameUIManagerContext);
-  const [scoreboard, setScoreboard] = useState<ScoreboardEntry[]>([]);
+  const [scoreboardEntries, setScoreboardEntries] = useState<Record<EthAddress, ScoreboardEntry>>({});
 
   const [account, setAccount] = useState<EthAddress | null>(null);
   useEffect(() => {
@@ -102,7 +102,7 @@ export default function LeaderboardPane({
     if (uiManager) {
       const players = uiManager.getAllPlayers();
       const planets = uiManager.getAllOwnedPlanets();
-      const scoreboardMap: Record<EthAddress, ScoreboardEntry> = [];
+      const scoreboardMap: Record<EthAddress, ScoreboardEntry> = {};
       for (const player of players) {
         scoreboardMap[player.address] = {
           playerId: player.address,
@@ -133,7 +133,7 @@ export default function LeaderboardPane({
       }
       const entries: ScoreboardEntry[] = Object.values(scoreboardMap);
       entries.sort((a, b) => b.score - a.score);
-      setScoreboard(entries);
+      setScoreboardEntries(scoreboardMap);
 
       for (let i = 0; i < entries.length; i++) {
         if (entries[i].playerId === account) {
@@ -165,12 +165,12 @@ export default function LeaderboardPane({
             </Sub>
           </span>
         </div>
-        {scoreboard.map((entry, idx) => (
+        {Object.entries(scoreboardEntries).map(([playerId, entry], idx) => (
           <div
             key={idx}
             style={{
               background:
-                entry.playerId === account
+                playerId === account
                   ? dfstyles.colors.backgroundlight
                   : undefined,
             }}
@@ -184,7 +184,7 @@ export default function LeaderboardPane({
                   @{entry.twitter}
                 </a>
               ) : (
-                <span>{entry.playerId}</span>
+                <span>{playerId}</span>
               )}
             </span>
             <span>

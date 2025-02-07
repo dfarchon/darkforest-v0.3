@@ -3,7 +3,7 @@ import { providers } from 'ethers';
 import { address } from './CheckedTypeUtils';
 
 export const getProvider = async () =>
-  new providers.Web3Provider(await detectEthereumProvider());
+  new providers.Web3Provider(await detectEthereumProvider() as providers.ExternalProvider);
 
 export const getAddress = async () =>
   address(await (await getProvider()).getSigner().getAddress());
@@ -14,7 +14,7 @@ const onEthereumConfigChange = () => {
 
 export const handleEthereumConfigChanges = () => {
   if (!window.ethereum) {
-    return () => {};
+    return () => { };
   }
   const onAccountChange = (_accounts: Array<string>) => {
     onEthereumConfigChange();
@@ -24,11 +24,12 @@ export const handleEthereumConfigChanges = () => {
     onEthereumConfigChange();
   };
 
-  window.ethereum.on('accountsChanged', onAccountChange);
-  window.ethereum.on('chainChanged', onChainChange);
+  const ethereum = window.ethereum;
+  ethereum.on('accountsChanged', onAccountChange);
+  ethereum.on('chainChanged', onChainChange);
 
   return () => {
-    window.ethereum.removeListener('accountsChanged', onAccountChange);
-    window.ethereum.removeListener('chainChanged', onChainChange);
+    ethereum.removeListener('accountsChanged', onAccountChange);
+    ethereum.removeListener('chainChanged', onChainChange);
   };
 };
