@@ -222,7 +222,7 @@ class EthereumAPI extends EventEmitter {
     terminalEmitter.printLink(
       `${unminedTx.txHash.slice(0, 6)}`,
       () => {
-        window.open(`https://ropsten.etherscan.io/tx/${unminedTx.txHash}`);
+        window.open(`https://holesky.etherscan.io/tx/${unminedTx.txHash}`);
       },
       TerminalTextStyle.White
     );
@@ -243,7 +243,7 @@ class EthereumAPI extends EventEmitter {
       terminalEmitter.printLink(
         `${unminedTx.txHash.slice(0, 6)}`,
         () => {
-          window.open(`https://ropsten.etherscan.io/tx/${unminedTx.txHash}`);
+          window.open(`https://holesky.etherscan.io/tx/${unminedTx.txHash}`);
         },
         TerminalTextStyle.White
       );
@@ -256,7 +256,7 @@ class EthereumAPI extends EventEmitter {
       terminalEmitter.printLink(
         `${unminedTx.txHash.slice(0, 6)}`,
         () => {
-          window.open(`https://ropsten.etherscan.io/tx/${unminedTx.txHash}`);
+          window.open(`https://holesky.etherscan.io/tx/${unminedTx.txHash}`);
         },
         TerminalTextStyle.White
       );

@@ -90,8 +90,8 @@ class GameManager extends EventEmitter implements AbstractGameManager {
   }
 
   // NOTICE: set end time
-  private readonly endTimeSeconds: number = new Date('2025-08-17T14:00:00.000Z').getTime() / 1000;
-  // 1609372800;
+  private readonly endTimeSeconds: number = new Date('2125-08-17T14:00:00.000Z').getTime() / 1000;
+  // 4911112800
 
   private constructor(
     account: EthAddress | null,
