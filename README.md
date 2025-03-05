@@ -7,7 +7,7 @@ A revival of the legendary 2020 Dark Forest game, updated for 2025. Dark Forest 
 ### Prerequisites
 
 - nvm (Node Version Manager)
-- Node.js v18.19.1 (Required for both smart contracts and client)
+- Node.js v18.20.7 (Required for both smart contracts and client)
 - npm 10.2.4 (Do not use yarn - there are known compatibility issues)
 
 
@@ -21,7 +21,7 @@ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
 1. **Smart Contracts Setup**
 ```bash
 cd eth/
-nvm use 18.19.1 
+nvm use 18.20.7
 npm install
 cp .env.example .env
 npx hardhat node
@@ -32,7 +32,7 @@ npx hardhat --network localhost deploy --whitelist false
 2. **Client Setup**
 ```bash
 cd client/
-nvm use 18.19.1 
+nvm use 18.20.7
 npm install
 npm run start:dev
 ```
