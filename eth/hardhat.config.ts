@@ -28,6 +28,13 @@ const config: HardhatUserConfig = {
       gasMultiplier: 1.5,       // Increased to 1.5x
       timeout: 120000,          // 2 minutes timeout
     },
+    baseSepolia: {
+      url: process.env.BASE_SEPOLIA_RPC_URL,
+      accounts: {
+        mnemonic: MNEMONIC,
+      },
+      chainId: Number(process.env.BASE_SEPOLIA_CHAINID),
+    },
     // Used when you dont specify a network on command line, like in tests
     hardhat: {
       accounts: {
