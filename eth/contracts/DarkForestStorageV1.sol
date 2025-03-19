@@ -14,14 +14,14 @@ contract DarkForestStorageV1 {
     // Game config
     uint256 public VERSION;
     bool public DISABLE_ZK_CHECK;
-    uint256 public constant PERLIN_THRESHOLD = 18;
-    uint256 public constant GLOBAL_SPEED_IN_HUNDRETHS = 75;
-    uint256 public constant PLANET_RARITY = 16384;
-    uint256 public constant ENERGY_PER_SECOND = 17;
-    uint256 public constant ENERGY_CAP = 200000;
-    uint256 public constant TRADING_POST_RARITY = 16;
-    uint256 public constant SILVER_RARITY = 4;
-    uint256 public constant TRADING_POST_BARBARIANS = 50;
+    uint256 public PERLIN_THRESHOLD = 18;
+    uint256 public GLOBAL_SPEED_IN_HUNDRETHS = 75;
+    uint256 public PLANET_RARITY = 16384;
+    uint256 public ENERGY_PER_SECOND = 17;
+    uint256 public ENERGY_CAP = 200000;
+    uint256 public TRADING_POST_RARITY = 16;
+    uint256 public SILVER_RARITY = 4;
+    uint256 public TRADING_POST_BARBARIANS = 50;
 
     // Default planet type stats
     uint256[] public planetLevelThresholds;

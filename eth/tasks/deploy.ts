@@ -38,7 +38,6 @@ const exec = async (command: string): Promise<string> => {
 };
 
 task("deploy", "deploy all contracts")
-  .addOptionalParam("whitelist", "override the whitelist", true, types.boolean)
   .addOptionalParam(
     "fund",
     "amount of eth to fund whitelist contract for fund",
@@ -47,25 +46,31 @@ task("deploy", "deploy all contracts")
   )
   .setAction(deploy);
 
+function loadGameConfig(): any {
+  const configPath = path.join(__dirname, '../config/gameConfig.json');
+  const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  return config;
+}
+
 async function deploy(
-  args: { whitelist: boolean; fund: number },
+  args: { fund: number },
   hre: HardhatRuntimeEnvironment,
 ) {
   console.log("\n🚀 Starting Dark Forest deployment...");
   console.log("--------------------");
   console.log(`Network: ${hre.network.name}`);
-  console.log(`Whitelist enabled: ${args.whitelist}`);
 
   const isDev = hre.network.name === "hardhat" || hre.network.name === "localhost";
   console.log(`Environment: ${isDev ? "Development" : "Production"}`);
+
+  // Load game configuration
+  const gameConfig = loadGameConfig();
 
   // Check environment variables
   console.log("\n📋 Checking environment variables...");
   const DEPLOYER_MNEMONIC = process.env.DEPLOYER_MNEMONIC;
   const PROJECT_ID = process.env.PROJECT_ID;
-  const DISABLE_ZK_CHECKS = process.env.DISABLE_ZK_CHECKS === undefined
-    ? undefined
-    : process.env.DISABLE_ZK_CHECKS === "true";
+  const DISABLE_ZK_CHECKS = gameConfig.DISABLE_ZK_CHECK;
   const NETWORK_URL = process.env.NETWORK_URL;
 
   if (
@@ -87,13 +92,7 @@ async function deploy(
     throw "";
   }
 
-  let whitelistEnabled: boolean;
-  if (typeof args.whitelist === "undefined") {
-    // `whitelistEnabled` defaults to `false` in dev but `true` in prod
-    whitelistEnabled = isDev ? false : true;
-  } else {
-    whitelistEnabled = args.whitelist;
-  }
+  const whitelistEnabled = gameConfig.whitelistEnabled;
 
   console.log('whitelistEnabled:', whitelistEnabled);
 
@@ -129,11 +128,13 @@ async function deploy(
   );
   console.log(`✅ Whitelist deployed to: ${whitelistContract.target}`);
 
+  // Update addresses in config
+  gameConfig.adminAddress = deployer.address;
+  gameConfig.whitelistAddress = whitelistContract.target.toString();
+
   console.log("\n📄 Deploying Core contract...");
   const coreContractAddress = await deployCore(
-    deployer.address,
-    whitelistContract.target.toString(),
-    DISABLE_ZK_CHECKS,
+    gameConfig,
     hre,
   );
   console.log(`✅ Core deployed to: ${coreContractAddress}`);
@@ -193,9 +194,7 @@ export async function deployWhitelist(
 }
 
 export async function deployCore(
-  coreControllerAddress: string,
-  whitelistAddress: string,
-  DISABLE_ZK_CHECKS: boolean,
+  gameConfig: any,
   hre: HardhatRuntimeEnvironment,
 ): Promise<string> {
   console.log("\n📦 Deploying library contracts...");
@@ -244,11 +243,7 @@ export async function deployCore(
   await contract.waitForDeployment();
 
   console.log("\n🔧 Initializing DarkForestCore...");
-  const tx = await contract.initialize(
-    coreControllerAddress,
-    whitelistAddress,
-    DISABLE_ZK_CHECKS,
-  );
+  const tx = await contract.initialize(gameConfig);
   console.log("Initialize transaction hash:", tx.hash);
   await tx.wait();
   console.log("✅ Initialization complete");

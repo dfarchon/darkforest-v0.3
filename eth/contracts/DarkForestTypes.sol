@@ -77,4 +77,24 @@ library DarkForestTypes {
         uint256 rangeMultiplier;
         uint256 silverCostMultiplier;
     }
+
+    struct DarkForestGameConfig {
+        address adminAddress;
+        address whitelistAddress;
+        bool paused;
+        bool DISABLE_ZK_CHECK;
+        uint256 PERLIN_THRESHOLD;
+        uint256 GLOBAL_SPEED_IN_HUNDRETHS;
+        uint256 PLANET_RARITY;
+        uint256 ENERGY_PER_SECOND;
+        uint256 ENERGY_CAP;
+        uint256 TRADING_POST_RARITY;
+        uint256 SILVER_RARITY;
+        uint256 TRADING_POST_BARBARIANS;
+        uint256[] planetLevelThresholds;
+        uint256[] planetTypeThresholds;
+        uint256 gameEndTimestamp;
+        uint256 target4RadiusConstant;
+        uint256 target5RadiusConstant;
+    }
 }

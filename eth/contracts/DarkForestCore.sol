@@ -35,6 +35,44 @@ contract DarkForestCore is Initializable, DarkForestStorageV1 {
     event PlanetUpgraded(uint256 loc);
 
     function initialize(
+        DarkForestTypes.DarkForestGameConfig memory _gameConfig
+    ) public initializer {
+        adminAddress = _gameConfig.adminAddress;
+        whitelist = Whitelist(_gameConfig.whitelistAddress);
+        paused = _gameConfig.paused;
+
+        VERSION = 1;
+        DISABLE_ZK_CHECK = _gameConfig.DISABLE_ZK_CHECK;
+        PERLIN_THRESHOLD = _gameConfig.PERLIN_THRESHOLD;
+        GLOBAL_SPEED_IN_HUNDRETHS = _gameConfig.GLOBAL_SPEED_IN_HUNDRETHS;
+        PLANET_RARITY = _gameConfig.PLANET_RARITY;
+        ENERGY_PER_SECOND = _gameConfig.ENERGY_PER_SECOND;
+        ENERGY_CAP = _gameConfig.ENERGY_CAP;
+        TRADING_POST_RARITY = _gameConfig.TRADING_POST_RARITY;
+        SILVER_RARITY = _gameConfig.SILVER_RARITY;
+        TRADING_POST_BARBARIANS = _gameConfig.TRADING_POST_BARBARIANS;
+
+        gameEndTimestamp = _gameConfig.gameEndTimestamp;
+        target4RadiusConstant = _gameConfig.target4RadiusConstant;
+        target5RadiusConstant = _gameConfig.target5RadiusConstant;
+
+        planetTypeThresholds = _gameConfig.planetTypeThresholds;
+        planetLevelThresholds = _gameConfig.planetLevelThresholds;
+
+        DarkForestInitialize.initializeDefaults(planetDefaultStats);
+        DarkForestInitialize.initializeUpgrades(upgrades);
+
+        initializedPlanetCountByLevel = [0, 0, 0, 0, 0, 0, 0, 0];
+        for (uint256 i = 0; i < planetLevelThresholds.length; i += 1) {
+            cumulativeRarities.push(
+                (2 ** 24 / planetLevelThresholds[i]) * PLANET_RARITY
+            );
+        }
+
+        _updateWorldRadius();
+    }
+
+    function initialize(
         address _adminAddress,
         address _whitelistAddress,
         bool _disableZKCheck
@@ -288,7 +326,7 @@ contract DarkForestCore is Initializable, DarkForestStorageV1 {
         return DarkForestTypes.PlanetType.PLANET;
     }
 
-    function _locationIdValid(uint256 _loc) public pure returns (bool) {
+    function _locationIdValid(uint256 _loc) public view returns (bool) {
         return (_loc <
             (21888242871839275222246405745257275088548364400416034343698204186575808495617 /
                 PLANET_RARITY));
