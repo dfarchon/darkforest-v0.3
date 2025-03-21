@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 // Import base Initializable contract
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./Verifier.sol";
 import "./DarkForestStorageV1.sol";
 import "./DarkForestUtils.sol";
@@ -27,9 +28,23 @@ import "./DarkForestInitialize.sol";
 // ADDING STORAGE VARIABLES HERE WI LL BLOCK ANY STORAGE CONTRACTS FROM EVER
 // ADDING THEIR OWN VARIABLES EVER AGAIN.
 
-contract DarkForestCore is Initializable, DarkForestStorageV1 {
+contract DarkForestCore is Initializable, OwnableUpgradeable, DarkForestStorageV1 {
     using ABDKMath64x64 for *;
 
+    // Whitelist storage variables (integrated from Whitelist contract)
+    bool public whitelistEnabled;
+    mapping(address => bool) public allowedAccounts;
+    mapping(bytes32 => bool) public allowedKeyHashes;
+    address[] public allowedAccountsArray;
+
+    // Whitelist events
+    event WhitelistStatusChanged(bool enabled);
+    event PlayerWhitelisted(address player);
+    event KeyAdded(bytes32 keyHash);
+    event KeyUsed(bytes32 keyHash, address owner);
+    event PlayerRemovedFromWhitelist(address player);
+
+    // Game events
     event PlayerInitialized(address player, uint256 loc);
     event ArrivalQueued(uint256 arrivalId);
     event PlanetUpgraded(uint256 loc);
@@ -37,8 +52,12 @@ contract DarkForestCore is Initializable, DarkForestStorageV1 {
     function initialize(
         DarkForestTypes.DarkForestGameConfig memory _gameConfig
     ) public initializer {
+        __Ownable_init();
         adminAddress = _gameConfig.adminAddress;
-        whitelist = Whitelist(_gameConfig.whitelistAddress);
+        
+        // Initialize whitelist functionality directly
+        whitelistEnabled = _gameConfig.whitelistEnabled;
+        
         paused = _gameConfig.paused;
 
         VERSION = 1;
@@ -72,14 +91,18 @@ contract DarkForestCore is Initializable, DarkForestStorageV1 {
         _updateWorldRadius();
     }
 
+    // Alternative initializer that doesn't require a full GameConfig
     function initialize(
         address _adminAddress,
-        address _whitelistAddress,
+        bool _whitelistEnabled,
         bool _disableZKCheck
     ) public initializer {
+        __Ownable_init();
         adminAddress = _adminAddress;
-        whitelist = Whitelist(_whitelistAddress);
-
+        
+        // Initialize whitelist functionality directly
+        whitelistEnabled = _whitelistEnabled;
+        
         paused = false;
 
         VERSION = 1;
@@ -124,7 +147,7 @@ contract DarkForestCore is Initializable, DarkForestStorageV1 {
 
     modifier onlyWhitelisted() {
         require(
-            whitelist.isWhitelisted(msg.sender),
+            isWhitelisted(msg.sender),
             "Player is not whitelisted"
         );
         _;
@@ -136,12 +159,12 @@ contract DarkForestCore is Initializable, DarkForestStorageV1 {
     }
 
     modifier notEnded() {
-        require(block.timestamp < gameEndTimestamp, "Game have ended");
+        require(block.timestamp < gameEndTimestamp, "Game has ended");
         _;
     }
 
     function changeAdmin(address _newAdmin) public onlyAdmin {
-        require(_newAdmin != address(0), "newOwner cannot be 0x0");
+        require(_newAdmin != address(0), "New owner cannot be zero address");
         adminAddress = _newAdmin;
     }
 
@@ -172,6 +195,93 @@ contract DarkForestCore is Initializable, DarkForestStorageV1 {
         uint256 _newConstant
     ) public onlyAdmin {
         target5RadiusConstant = _newConstant;
+    }
+
+    ////////////////////////////
+    /// Whitelist Functions ////
+    ////////////////////////////
+
+    // Toggle whitelist functionality
+    function setWhitelistEnabled(bool _enabled) public onlyAdmin {
+        whitelistEnabled = _enabled;
+        emit WhitelistStatusChanged(_enabled);
+    }
+
+    // Check if an address is whitelisted
+    function isWhitelisted(address _addr) public view returns (bool) {
+        if (!whitelistEnabled) {
+            return true;
+        }
+        return allowedAccounts[_addr];
+    }
+
+    // Get number of allowed accounts
+    function getNAllowed() public view returns (uint256) {
+        return allowedAccountsArray.length;
+    }
+
+    // Check if a key is valid
+    function isKeyValid(string memory key) public view returns (bool) {
+        bytes32 hashed = keccak256(abi.encodePacked(key));
+        return allowedKeyHashes[hashed];
+    }
+
+    // Add keys to the whitelist
+    function addKeys(bytes32[] memory hashes) public onlyAdmin {
+        for (uint16 i = 0; i < hashes.length; i++) {
+            allowedKeyHashes[hashes[i]] = true;
+            emit KeyAdded(hashes[i]);
+        }
+    }
+
+    // Use a key to whitelist an address
+    function useKey(string memory key, address owner) public onlyAdmin {
+        require(!allowedAccounts[owner], "Player already whitelisted");
+        bytes32 hashed = keccak256(abi.encodePacked(key));
+        require(allowedKeyHashes[hashed], "Invalid key");
+        allowedAccounts[owner] = true;
+        allowedAccountsArray.push(owner);
+        allowedKeyHashes[hashed] = false;
+        emit PlayerWhitelisted(owner);
+        emit KeyUsed(hashed, owner);
+    }
+
+    // Remove an address from the whitelist
+    function removeFromWhitelist(address toRemove) public onlyAdmin {
+        require(
+            allowedAccounts[toRemove],
+            "Player was not whitelisted to begin with"
+        );
+        allowedAccounts[toRemove] = false;
+        for (uint256 i = 0; i < allowedAccountsArray.length; i++) {
+            if (allowedAccountsArray[i] == toRemove) {
+                allowedAccountsArray[i] = allowedAccountsArray[
+                    allowedAccountsArray.length - 1
+                ];
+                allowedAccountsArray.pop();
+                break;
+            }
+        }
+        emit PlayerRemovedFromWhitelist(toRemove);
+    }
+
+    // Add player directly to whitelist
+    function addToWhitelist(address player) public onlyAdmin {
+        require(!allowedAccounts[player], "Player already whitelisted");
+        allowedAccounts[player] = true;
+        allowedAccountsArray.push(player);
+        emit PlayerWhitelisted(player);
+    }
+
+    // Add multiple players to whitelist
+    function addToWhitelistMultiple(address[] calldata players) public onlyAdmin {
+        for (uint256 i = 0; i < players.length; i++) {
+            if (!allowedAccounts[players[i]]) {
+                allowedAccounts[players[i]] = true;
+                allowedAccountsArray.push(players[i]);
+                emit PlayerWhitelisted(players[i]);
+            }
+        }
     }
 
     //////////////

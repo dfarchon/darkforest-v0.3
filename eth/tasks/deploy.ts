@@ -120,19 +120,13 @@ async function deploy(
     );
   }
 
-  console.log("\n📄 Deploying Whitelist contract...");
-  const whitelistContract = await deployWhitelist(
-    deployer.address,
-    whitelistEnabled,
-    hre,
-  );
-  console.log(`✅ Whitelist deployed to: ${whitelistContract.target}`);
-
+  console.log("\n📄 Deploying DarkForest contract...");
   // Update addresses in config
   gameConfig.adminAddress = deployer.address;
-  gameConfig.whitelistAddress = whitelistContract.target.toString();
+  gameConfig.whitelistEnabled = whitelistEnabled;
 
-  console.log("\n📄 Deploying Core contract...");
+  // Deploy Core contract directly (without needing a separate Whitelist contract)
+  console.log("\n📄 Deploying Core contract with integrated whitelist...");
   const coreContractAddress = await deployCore(
     gameConfig,
     hre,
@@ -144,7 +138,7 @@ async function deploy(
     writeEnv(`../whitelist/${isDev ? "dev" : "prod"}.autogen.env`, {
       mnemonic: DEPLOYER_MNEMONIC,
       project_id: PROJECT_ID,
-      contract_address: whitelistContract.target.toString(),
+      contract_address: coreContractAddress,
     });
   } catch { }
 
@@ -159,8 +153,7 @@ async function deploy(
   console.log("--------------------");
   console.log("Summary:");
   console.log(`Network: ${hre.network.name}`);
-  console.log(`Whitelist contract: ${whitelistContract.target}`);
-  console.log(`Core contract: ${coreContractAddress}`);
+  console.log(`Core contract (with integrated whitelist): ${coreContractAddress}`);
   console.log(`Whitelist enabled: ${whitelistEnabled}`);
   console.log(`ZK checks disabled: ${DISABLE_ZK_CHECKS}`);
   console.log("--------------------\n");
@@ -175,22 +168,6 @@ async function clientConfig() {
   await exec(
     "cp ./artifacts/contracts/DarkForestCore.sol/DarkForestCore.json ../client/public/contracts/DarkForestCore.json",
   );
-}
-
-export async function deployWhitelist(
-  whitelistControllerAddress: string,
-  whitelist: boolean,
-  hre: HardhatRuntimeEnvironment,
-) {
-  const factory = await hre.ethers.getContractFactory("Whitelist");
-  const contract = await factory.deploy();
-  await contract.waitForDeployment();
-
-  const tx = await contract.initialize(whitelistControllerAddress, whitelist);
-  console.log("initialize tx hash: ");
-  console.log(tx.hash);
-  console.log("Whitelist contract is deployed to ", contract.target);
-  return contract;
 }
 
 export async function deployCore(

@@ -3,12 +3,10 @@ pragma solidity ^0.8.0;
 
 // Import base Initializable contract
 import "./DarkForestTypes.sol";
-import "./Whitelist.sol";
 
 contract DarkForestStorageV1 {
     // Contract housekeeping
     address public adminAddress;
-    Whitelist whitelist;
     bool public paused;
 
     // Game config

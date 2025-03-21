@@ -80,7 +80,7 @@ library DarkForestTypes {
 
     struct DarkForestGameConfig {
         address adminAddress;
-        address whitelistAddress;
+        bool whitelistEnabled;
         bool paused;
         bool DISABLE_ZK_CHECK;
         uint256 PERLIN_THRESHOLD;
