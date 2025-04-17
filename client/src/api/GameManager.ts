@@ -48,6 +48,7 @@ import {
   locationIdToBigNumber,
   address,
 } from '../utils/CheckedTypeUtils';
+import { GameConfig } from '../_types/global/GameConfig';
 
 export enum GameManagerEvent {
   PlanetUpdate = 'PlanetUpdate',
@@ -691,6 +692,10 @@ class GameManager extends EventEmitter implements AbstractGameManager {
 
     this.ethereumAPI.upgradePlanet(upgradeArgs);
     return this;
+  }
+
+  async deployContract(gameConfig?: GameConfig): Promise<string> {
+    return this.ethereumAPI.deployContract(gameConfig);
   }
 }
 

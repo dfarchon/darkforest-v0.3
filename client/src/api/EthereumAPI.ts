@@ -12,7 +12,7 @@ import {
 // NOTE: DO NOT IMPORT FROM ETHERS SUBPATHS. see https://github.com/ethers-io/ethers.js/issues/349 (these imports trip up webpack)
 // in particular, the below is bad!
 // import {TransactionReceipt, Provider, TransactionResponse, Web3Provider} from "ethers/providers";
-import { Contract, providers, utils, BigNumber as EthersBN } from 'ethers';
+import { Contract, providers, utils, BigNumber as EthersBN, ethers } from 'ethers';
 import _ from 'lodash';
 
 import {
@@ -58,6 +58,7 @@ import {
 } from '../utils/EthereumUtils';
 import { aggregateBulkGetter, hexifyBigIntNestedArray } from '../utils/Utils';
 import TerminalEmitter, { TerminalTextStyle } from '../utils/TerminalEmitter';
+import { GameConfig, DEFAULT_GAME_CONFIG } from '../_types/global/GameConfig';
 
 export function isUnconfirmedInit(tx: UnconfirmedTx): tx is UnconfirmedInit {
   return tx.type === EthTxType.INIT;
@@ -216,13 +217,13 @@ class EthereumAPI extends EventEmitter {
   public onTxSubmit(unminedTx: UnconfirmedTx): void {
     const terminalEmitter = TerminalEmitter.getInstance();
     terminalEmitter.print(
-      `[TX SUBMIT] ${unminedTx.type} transaction (`,
+      '[TX SUBMIT] ' + unminedTx.type + ' transaction (',
       TerminalTextStyle.Blue
     );
     terminalEmitter.printLink(
-      `${unminedTx.txHash.slice(0, 6)}`,
+      unminedTx.txHash.slice(0, 6),
       () => {
-        window.open(`https://holesky.etherscan.io/tx/${unminedTx.txHash}`);
+        window.open('https://holesky.etherscan.io/tx/' + unminedTx.txHash);
       },
       TerminalTextStyle.White
     );
@@ -237,26 +238,26 @@ class EthereumAPI extends EventEmitter {
     const terminalEmitter = TerminalEmitter.getInstance();
     if (success) {
       terminalEmitter.print(
-        `[TX CONFIRM] ${unminedTx.type} transaction (`,
+        '[TX CONFIRM] ' + unminedTx.type + ' transaction (',
         TerminalTextStyle.Green
       );
       terminalEmitter.printLink(
-        `${unminedTx.txHash.slice(0, 6)}`,
+        unminedTx.txHash.slice(0, 6),
         () => {
-          window.open(`https://holesky.etherscan.io/tx/${unminedTx.txHash}`);
+          window.open('https://holesky.etherscan.io/tx/' + unminedTx.txHash);
         },
         TerminalTextStyle.White
       );
       terminalEmitter.println(`) confirmed.`, TerminalTextStyle.Green);
     } else {
       terminalEmitter.print(
-        `[TX ERROR] ${unminedTx.type} transaction (`,
+        '[TX ERROR] ' + unminedTx.type + ' transaction (',
         TerminalTextStyle.Red
       );
       terminalEmitter.printLink(
-        `${unminedTx.txHash.slice(0, 6)}`,
+        unminedTx.txHash.slice(0, 6),
         () => {
-          window.open(`https://holesky.etherscan.io/tx/${unminedTx.txHash}`);
+          window.open('https://holesky.etherscan.io/tx/' + unminedTx.txHash);
         },
         TerminalTextStyle.White
       );
@@ -336,6 +337,148 @@ class EthereumAPI extends EventEmitter {
       this.onTxSubmit(unminedUpgradeTx);
     }
     return tx.wait();
+  }
+
+  linkLibraries(bytecode: string, linkReferences: any, libraries: Record<string, string>) {
+    for (const fileName in linkReferences) {
+      for (const libName in linkReferences[fileName]) {
+        const fixups = linkReferences[fileName][libName];
+        const address = libraries[libName];
+        if (!address) throw new Error(`Missing address for library ${libName}`);
+
+        for (const fixup of fixups) {
+          // Insert address (remove 0x prefix, convert to lowercase)
+          bytecode =
+            bytecode.substring(0, 2 + fixup.start * 2) +
+            address.toLowerCase().replace(/^0x/, '') +
+            bytecode.substring(2 + (fixup.start + fixup.length) * 2);
+        }
+      }
+    }
+    return bytecode;
+  }
+
+  async deployContract(gameConfig?: GameConfig): Promise<string> {
+    const terminalEmitter = TerminalEmitter.getInstance();
+    terminalEmitter.println('Starting DarkForest contract deployment...', TerminalTextStyle.Green);
+
+
+    // Get contract ABIs and bytecode
+    terminalEmitter.println('Loading contract JSONs...', TerminalTextStyle.Sub);
+    const DarkForestCoreJSON = await fetch('/public/contracts/DarkForestCore.json').then(r => r.json());
+
+    // For ethers compatibility
+    const provider: providers.Web3Provider = await getProvider();
+    const signer = provider.getSigner();
+
+    // Merge provided config with default config
+    const finalConfig: GameConfig = {
+      ...DEFAULT_GAME_CONFIG,
+      ...gameConfig
+    };
+
+    finalConfig.adminAddress = await signer.getAddress();
+
+
+    try {
+      // Deploy library contracts first
+      terminalEmitter.println('Deploying library contracts...', TerminalTextStyle.Blue);
+      const libraryAddresses: Record<string, string> = {};
+
+      // 1. Deploy DarkForestInitialize
+      terminalEmitter.println('(1/5) Deploying DarkForestInitialize...', TerminalTextStyle.Sub);
+      const initializeJSON = await fetch('/public/contracts/DarkForestInitialize.json').then(r => r.json());
+      const initializeFactory = new ethers.ContractFactory(
+        initializeJSON.abi,
+        initializeJSON.bytecode,
+        signer
+      );
+      const initializeContract = await initializeFactory.deploy();
+      await initializeContract.deployed();
+      libraryAddresses["DarkForestInitialize"] = initializeContract.address;
+
+      // 2. Deploy DarkForestLazyUpdate
+      terminalEmitter.println('(2/5) Deploying DarkForestLazyUpdate...', TerminalTextStyle.Sub);
+      const lazyUpdateJSON = await fetch('/public/contracts/DarkForestLazyUpdate.json').then(r => r.json());
+      const lazyUpdateFactory = new ethers.ContractFactory(
+        lazyUpdateJSON.abi,
+        lazyUpdateJSON.bytecode,
+        signer
+      );
+      const lazyUpdateContract = await lazyUpdateFactory.deploy();
+      await lazyUpdateContract.deployed();
+      libraryAddresses["DarkForestLazyUpdate"] = lazyUpdateContract.address;
+
+      // 3. Deploy DarkForestPlanet
+      terminalEmitter.println('(3/5) Deploying DarkForestPlanet...', TerminalTextStyle.Sub);
+      const planetJSON = await fetch('/public/contracts/DarkForestPlanet.json').then(r => r.json());
+      const planetFactory = new ethers.ContractFactory(
+        planetJSON.abi,
+        planetJSON.bytecode,
+        signer
+      );
+      const planetContract = await planetFactory.deploy();
+      await planetContract.deployed();
+      libraryAddresses["DarkForestPlanet"] = planetContract.address;
+
+      // 4. Deploy DarkForestUtils
+      terminalEmitter.println('(4/5) Deploying DarkForestUtils...', TerminalTextStyle.Sub);
+      const utilsJSON = await fetch('/public/contracts/DarkForestUtils.json').then(r => r.json());
+      const utilsFactory = new ethers.ContractFactory(
+        utilsJSON.abi,
+        utilsJSON.bytecode,
+        signer
+      );
+      const utilsContract = await utilsFactory.deploy();
+      await utilsContract.deployed();
+      libraryAddresses["DarkForestUtils"] = utilsContract.address;
+
+      // 5. Deploy Verifier
+      terminalEmitter.println('(5/5) Deploying Verifier...', TerminalTextStyle.Sub);
+      const verifierJSON = await fetch('/public/contracts/Verifier.json').then(r => r.json());
+      const verifierFactory = new ethers.ContractFactory(
+        verifierJSON.abi,
+        verifierJSON.bytecode,
+        signer
+      );
+      const verifierContract = await verifierFactory.deploy();
+      await verifierContract.deployed();
+      libraryAddresses["Verifier"] = verifierContract.address;
+
+      // Now deploy the main DarkForestCore contract with libraries
+      terminalEmitter.println('Deploying main DarkForestCore contract...', TerminalTextStyle.Green);
+
+
+      const linkedBytecode = this.linkLibraries(DarkForestCoreJSON.bytecode, DarkForestCoreJSON.linkReferences, libraryAddresses);
+
+      const coreFactory = new ethers.ContractFactory(
+        DarkForestCoreJSON.abi,
+        linkedBytecode,
+        signer
+      );
+
+      terminalEmitter.println('Please confirm the deployment transaction in your wallet...', TerminalTextStyle.White);
+      const coreContract = await coreFactory.deploy();
+      terminalEmitter.println(`Core contract deployment transaction submitted: ${coreContract.deployTransaction.hash}`, TerminalTextStyle.Blue);
+      await coreContract.deployed();
+
+      // Initialize the core contract
+      terminalEmitter.println('Initializing DarkForestCore contract...', TerminalTextStyle.Green);
+
+      const initTx = await coreContract.init(finalConfig);
+
+      terminalEmitter.println(`Initialization transaction submitted: ${initTx.hash}`, TerminalTextStyle.Blue);
+      await initTx.wait();
+
+      terminalEmitter.println(`Contract successfully deployed at: ${coreContract.address}`, TerminalTextStyle.Green);
+
+
+      return coreContract.address;
+    } catch (error) {
+      terminalEmitter.println(`Deployment failed: ${error.message}`, TerminalTextStyle.Red);
+      console.error(error);
+      throw error;
+    }
   }
 
   async move(

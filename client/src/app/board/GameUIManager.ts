@@ -22,6 +22,7 @@ import {
 } from '../../_types/darkforest/api/EthereumAPITypes';
 import { MiningPattern } from '../../utils/MiningPatterns';
 import { GameManagerEvent } from '../../api/GameManager';
+import { GameConfig } from '../../_types/global/GameConfig';
 
 export enum GameUIManagerEvent {
   InitializedPlayer = 'InitializedPlayer',
@@ -205,7 +206,7 @@ class GameUIManager extends EventEmitter implements AbstractUIManager {
 
         const dist = Math.sqrt(
           (this.mouseDownOverCoords.x - mouseUpOverCoords.x) ** 2 +
-            (this.mouseDownOverCoords.y - mouseUpOverCoords.y) ** 2
+          (this.mouseDownOverCoords.y - mouseUpOverCoords.y) ** 2
         );
         const myAtk: number = moveShipsDecay(
           forces,
@@ -425,6 +426,10 @@ class GameUIManager extends EventEmitter implements AbstractUIManager {
     this.gameManager.upgrade(planet, branch);
   }
 
+  deployContract(gameConfig?: GameConfig): Promise<string> {
+    return this.gameManager.deployContract(gameConfig);
+  }
+
   // non-nullable
   getHomeCoords(): WorldCoords {
     return this.gameManager.getHomeCoords() || { x: 0, y: 0 };
@@ -513,7 +518,7 @@ class GameUIManager extends EventEmitter implements AbstractUIManager {
         if (
           planet &&
           this.radiusMap[planet.planetLevel] >
-            Math.max(Math.abs(x - coords.x), Math.abs(y - coords.y))
+          Math.max(Math.abs(x - coords.x), Math.abs(y - coords.y))
         ) {
           // coords is in hitbox
           if (this.radiusMap[planet.planetLevel] < smallestPlanetRadius) {

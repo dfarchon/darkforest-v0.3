@@ -175,10 +175,37 @@ async function deploy(
 task("client:config", "client config").setAction(clientConfig);
 
 async function clientConfig() {
-  await exec("mkdir ../client/public/contracts");
-  await exec(
-    "cp ./artifacts/contracts/DarkForestCore.sol/DarkForestCore.json ../client/public/contracts/DarkForestCore.json",
-  );
+  // Check if directory exists before creating it
+  try {
+    if (!fs.existsSync('../client/public/contracts')) {
+      await exec("mkdir -p ../client/public/contracts");
+    }
+
+    // Copy the main DarkForestCore contract JSON
+    await exec(
+      "cp ./artifacts/contracts/DarkForestCore.sol/DarkForestCore.json ../client/public/contracts/DarkForestCore.json",
+    );
+
+    // Copy all library contract JSONs
+    const libraryContracts = [
+      "DarkForestInitialize",
+      "DarkForestLazyUpdate",
+      "DarkForestPlanet",
+      "DarkForestUtils",
+      "Verifier"
+    ];
+
+    for (const library of libraryContracts) {
+      console.log(`Copying ${library} contract JSON...`);
+      await exec(
+        `cp ./artifacts/contracts/${library}.sol/${library}.json ../client/public/contracts/${library}.json`,
+      );
+    }
+
+    console.log("All contract JSONs copied to client/public/contracts/");
+  } catch (error) {
+    console.error("Error in clientConfig:", error);
+  }
 }
 
 export async function deployCore(
@@ -237,14 +264,18 @@ export async function deployCore(
   });
   const contract = await factory.deploy();
   await contract.waitForDeployment();
-
   console.log("\n🔧 Initializing DarkForestCore...");
-  const tx = await contract.initialize(gameConfig);
+  const tx = await contract.init(gameConfig);
   console.log("Initialize transaction hash:", tx.hash);
   await tx.wait();
   console.log("✅ Initialization complete");
 
   console.log(`\n🎯 DarkForestCore deployed to: ${contract.target}`);
+
+  await clientConfig();
+
+  console.log("✅ Client config complete");
+
   return {
     coreAddress: contract.target.toString(),
     libraries: libraryAddresses

@@ -16,6 +16,7 @@ import {
   UnconfirmedUpgrade,
 } from '../_types/darkforest/api/EthereumAPITypes';
 import { MiningPattern } from '../utils/MiningPatterns';
+import { GameConfig } from '../_types/global/GameConfig';
 
 export default interface AbstractGameManager extends EventEmitter {
   destroy(): void;
@@ -67,4 +68,5 @@ export default interface AbstractGameManager extends EventEmitter {
     silver: number
   ): AbstractGameManager;
   upgrade(planet: Planet, branch: number): AbstractGameManager;
+  deployContract(gameConfig?: GameConfig): Promise<string>;
 }

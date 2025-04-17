@@ -28,7 +28,11 @@ import "./DarkForestInitialize.sol";
 // ADDING STORAGE VARIABLES HERE WI LL BLOCK ANY STORAGE CONTRACTS FROM EVER
 // ADDING THEIR OWN VARIABLES EVER AGAIN.
 
-contract DarkForestCore is Initializable, OwnableUpgradeable, DarkForestStorageV1 {
+contract DarkForestCore is
+    Initializable,
+    OwnableUpgradeable,
+    DarkForestStorageV1
+{
     using ABDKMath64x64 for *;
 
     // Whitelist storage variables (integrated from Whitelist contract)
@@ -49,15 +53,15 @@ contract DarkForestCore is Initializable, OwnableUpgradeable, DarkForestStorageV
     event ArrivalQueued(uint256 arrivalId);
     event PlanetUpgraded(uint256 loc);
 
-    function initialize(
+    function init(
         DarkForestTypes.DarkForestGameConfig memory _gameConfig
     ) public initializer {
         __Ownable_init();
         adminAddress = _gameConfig.adminAddress;
-        
+
         // Initialize whitelist functionality directly
         whitelistEnabled = _gameConfig.whitelistEnabled;
-        
+
         paused = _gameConfig.paused;
 
         VERSION = 1;
@@ -99,10 +103,10 @@ contract DarkForestCore is Initializable, OwnableUpgradeable, DarkForestStorageV
     ) public initializer {
         __Ownable_init();
         adminAddress = _adminAddress;
-        
+
         // Initialize whitelist functionality directly
         whitelistEnabled = _whitelistEnabled;
-        
+
         paused = false;
 
         VERSION = 1;
@@ -146,10 +150,7 @@ contract DarkForestCore is Initializable, OwnableUpgradeable, DarkForestStorageV
     }
 
     modifier onlyWhitelisted() {
-        require(
-            isWhitelisted(msg.sender),
-            "Player is not whitelisted"
-        );
+        require(isWhitelisted(msg.sender), "Player is not whitelisted");
         _;
     }
 
@@ -274,7 +275,9 @@ contract DarkForestCore is Initializable, OwnableUpgradeable, DarkForestStorageV
     }
 
     // Add multiple players to whitelist
-    function addToWhitelistMultiple(address[] calldata players) public onlyAdmin {
+    function addToWhitelistMultiple(
+        address[] calldata players
+    ) public onlyAdmin {
         for (uint256 i = 0; i < players.length; i++) {
             if (!allowedAccounts[players[i]]) {
                 allowedAccounts[players[i]] = true;

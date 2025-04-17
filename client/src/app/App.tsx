@@ -3,6 +3,7 @@ import React from 'react';
 import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
 import LandingPage from './LandingPage';
 import GameLandingPage from './GameLandingPage';
+import LobbyLandingPage from './LobbyLandingPage';
 import dfstyles from '../styles/dfstyles';
 import styled from 'styled-components';
 import { SharePlanet } from './SharePlanet';
@@ -11,6 +12,8 @@ function App() {
   return (
     <Router>
       <Switch>
+        <Route path='/lobby' component={LobbyLandingPage} />
+
         <Route path='/game1' component={GameLandingPage} />
         <Route
           path='/replay1'
