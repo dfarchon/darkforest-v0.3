@@ -127,10 +127,12 @@ async function deploy(
 
   // Deploy Core contract directly (without needing a separate Whitelist contract)
   console.log("\n📄 Deploying Core contract with integrated whitelist...");
-  const coreContractAddress = await deployCore(
+  const deployResult = await deployCore(
     gameConfig,
     hre,
   );
+  const coreContractAddress = deployResult.coreAddress;
+  const libraryAddresses = deployResult.libraries;
   console.log(`✅ Core deployed to: ${coreContractAddress}`);
 
   console.log("\n💾 Updating configuration files...");
@@ -142,11 +144,20 @@ async function deploy(
     });
   } catch { }
 
+  // Save core contract address to file
   fs.writeFileSync(
     isDev === false
       ? "../client/src/utils/prod_contract_addr.ts"
       : "../client/src/utils/local_contract_addr.ts",
     `export const contractAddress = '${coreContractAddress}'`,
+  );
+
+  // Save library addresses to file
+  fs.writeFileSync(
+    isDev === false
+      ? "../client/src/utils/prod_library_addrs.ts"
+      : "../client/src/utils/local_library_addrs.ts",
+    `export const libraryAddresses = ${JSON.stringify(libraryAddresses, null, 2)};`
   );
 
   console.log("\n🎉 Deployment complete!");
@@ -173,37 +184,45 @@ async function clientConfig() {
 export async function deployCore(
   gameConfig: any,
   hre: HardhatRuntimeEnvironment,
-): Promise<string> {
+): Promise<{ coreAddress: string, libraries: Record<string, string> }> {
   console.log("\n📦 Deploying library contracts...");
+
+  // Object to store all library contract addresses
+  const libraryAddresses: Record<string, string> = {};
 
   console.log("1/5 Deploying DarkForestInitialize...");
   const factory1 = await hre.ethers.getContractFactory("DarkForestInitialize");
   const contract1 = await factory1.deploy();
   await contract1.waitForDeployment();
+  libraryAddresses["DarkForestInitialize"] = contract1.target.toString();
   console.log(`✅ DarkForestInitialize deployed to: ${contract1.target}`);
 
   console.log("\n2/5 Deploying DarkForestLazyUpdate...");
   const factory2 = await hre.ethers.getContractFactory("DarkForestLazyUpdate");
   const contract2 = await factory2.deploy();
   await contract2.waitForDeployment();
+  libraryAddresses["DarkForestLazyUpdate"] = contract2.target.toString();
   console.log(`✅ DarkForestLazyUpdate deployed to: ${contract2.target}`);
 
   console.log("\n3/5 Deploying DarkForestPlanet...");
   const factory3 = await hre.ethers.getContractFactory("DarkForestPlanet");
   const contract3 = await factory3.deploy();
   await contract3.waitForDeployment();
+  libraryAddresses["DarkForestPlanet"] = contract3.target.toString();
   console.log(`✅ DarkForestPlanet deployed to: ${contract3.target}`);
 
   console.log("\n4/5 Deploying DarkForestUtils...");
   const factory4 = await hre.ethers.getContractFactory("DarkForestUtils");
   const contract4 = await factory4.deploy();
   await contract4.waitForDeployment();
+  libraryAddresses["DarkForestUtils"] = contract4.target.toString();
   console.log(`✅ DarkForestUtils deployed to: ${contract4.target}`);
 
   console.log("\n5/5 Deploying Verifier...");
   const factory5 = await hre.ethers.getContractFactory("Verifier");
   const contract5 = await factory5.deploy();
   await contract5.waitForDeployment();
+  libraryAddresses["Verifier"] = contract5.target.toString();
   console.log(`✅ Verifier deployed to: ${contract5.target}`);
 
   console.log("\n🔨 Deploying main DarkForestCore contract...");
@@ -226,5 +245,8 @@ export async function deployCore(
   console.log("✅ Initialization complete");
 
   console.log(`\n🎯 DarkForestCore deployed to: ${contract.target}`);
-  return contract.target.toString();
+  return {
+    coreAddress: contract.target.toString(),
+    libraries: libraryAddresses
+  };
 }

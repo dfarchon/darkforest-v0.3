@@ -1,6 +1,5 @@
 {
     "adminAddress": "0x0000000000000000000000000000000000000000",
-    "whitelistAddress": "0x0000000000000000000000000000000000000000",
     "whitelistEnabled": false,
     "paused": false,
     "DISABLE_ZK_CHECK": false,

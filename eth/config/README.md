@@ -5,7 +5,7 @@ This document describes the configuration parameters in `gameConfig.json`.
 ## Basic Settings
 
 - `adminAddress`: Admin wallet address
-- `whitelistAddress`: Whitelist contract address
+- `whitelistEnabled`: Whether the whitelist is enabled
 - `paused`: Whether the game is paused
 - `DISABLE_ZK_CHECK`: Whether to disable ZK proof verification
 
