@@ -49,6 +49,7 @@ import {
   address,
 } from '../utils/CheckedTypeUtils';
 import { GameConfig } from '../_types/global/GameConfig';
+import { getChainConfig, getDefaultChainKey } from '../utils/chain-config';
 
 export enum GameManagerEvent {
   PlanetUpdate = 'PlanetUpdate',
@@ -149,9 +150,16 @@ class GameManager extends EventEmitter implements AbstractGameManager {
   }
 
   static async create(customContractAddress?: string, useMockHash = false): Promise<GameManager> {
-    // initialize dependencies according to a DAG
+    // If no custom contract address is provided, get it from chain-config
+    if (!customContractAddress) {
+      const defaultChainKey = getDefaultChainKey();
+      const chainConfig = getChainConfig(defaultChainKey);
+      if (chainConfig) {
+        customContractAddress = chainConfig.contractAddress;
+      }
+    }
 
-    // first we initialize the EthereumAPI and get the user's eth account, and load contract constants + state
+    // initialize dependencies according to a DAG
     const ethereumAPI = await EthereumAPI.create(customContractAddress);
     /*
     const ethereumAPI = await EthereumAPI.createMock(

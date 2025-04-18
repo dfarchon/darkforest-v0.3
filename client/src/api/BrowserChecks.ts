@@ -6,11 +6,12 @@ import { getProvider, getAddress } from '../utils/EthereumUtils';
 import TerminalEmitter, { TerminalTextStyle } from '../utils/TerminalEmitter';
 import { EthAddress } from '../_types/global/GlobalTypes';
 import { ExternalProvider } from '@ethersproject/providers';
+import { getChainConfigByChainId, getChainConfig, getDefaultChainKey } from '../utils/chain-config';
 
 export enum Incompatibility {
   NoIDB = 'no_idb',
   NoMetamaskInstalled = 'no_metamask_installed',
-  NotRopsten = 'not_ropsten',
+  UnsupportedNetwork = 'unsupported_network',
   MobileOrTablet = 'mobile_or_tablet',
   UnsupportedBrowser = 'unsupported_browser',
   NotLoggedInOrEnabled = 'not_logged_in_or_enabled',
@@ -91,15 +92,22 @@ export const doesBrowserHaveAccountData = async (
 const isLoggedIntoMetamask = async () =>
   (await (await getProvider()).listAccounts()).length > 0;
 
-const isRospten = async (provider: providers.Web3Provider) => {
+const isSupportedNetwork = async (provider: providers.Web3Provider) => {
   if (process.env.NODE_ENV !== 'production') {
     return true;
   }
 
   const network = await getNetworkType(provider);
-  // NOTICE: Holesky chainId is 17000, don't know why name is "unknown"
-  return network.chainId === 17000;
-  return (await getNetworkType(provider)).name === 'holesky';
+
+  // Use chain-config to get the supported chain configuration
+  // Get the chain config as that's the production chain
+  const chainConfig = getChainConfig(getDefaultChainKey());
+  if (!chainConfig) {
+    return false;
+  }
+
+  // Check if the current chain ID matches the config
+  return network.chainId === chainConfig.chainId;
 };
 
 const isFirefox = () => navigator.userAgent.indexOf('Firefox') > 0;
@@ -142,7 +150,7 @@ const checkFeatures = async (): Promise<FeatureList> => {
 
     const provider = new providers.Web3Provider(detectedProvider as ExternalProvider);
 
-    incompats[Incompatibility.NotRopsten] = !(await isRospten(provider));
+    incompats[Incompatibility.UnsupportedNetwork] = !(await isSupportedNetwork(provider));
     incompats[
       Incompatibility.NotLoggedInOrEnabled
     ] = !(await isLoggedIntoMetamask());

@@ -59,6 +59,11 @@ import {
 import { aggregateBulkGetter, hexifyBigIntNestedArray } from '../utils/Utils';
 import TerminalEmitter, { TerminalTextStyle } from '../utils/TerminalEmitter';
 import { GameConfig, DEFAULT_GAME_CONFIG } from '../_types/global/GameConfig';
+import {
+  getChainConfig,
+  getChainConfigByChainId,
+  getDefaultChainKey
+} from '../utils/chain-config';
 
 export function isUnconfirmedInit(tx: UnconfirmedTx): tx is UnconfirmedInit {
   return tx.type === EthTxType.INIT;
@@ -83,6 +88,7 @@ class EthereumAPI extends EventEmitter {
   private readonly provider: AbstractProvider;
   private readonly contract: AbstractContract;
   private readonly usingMockchain: boolean;
+  public etherscanUrl: string = 'https://etherscan.io'; // Default explorer URL
 
   private constructor(
     signer: AbstractSigner,
@@ -140,37 +146,63 @@ class EthereumAPI extends EventEmitter {
     const signer: providers.JsonRpcSigner = provider.getSigner();
     const account: EthAddress = address(await signer.getAddress());
 
-    // NOTICE: show account
-    console.log(account);
+    // Log connected account
+    console.log('Connected account:', account);
 
-    //NOTICE: show chain id
+    // Get current chain ID
     const network = await provider.getNetwork();
-    console.log('Chain ID:', network.chainId);
+    const chainId = network.chainId;
+    console.log('Connected to chain ID:', chainId);
 
+    // Get chain configuration based on the current network
+    const chainConfig = getChainConfigByChainId(chainId);
+    console.log('Chain configuration:', chainConfig ? chainConfig.name : 'Unknown chain');
 
-    const isProd = process.env.NODE_ENV === 'production';
-
-    // Use custom contract address if provided, otherwise use default
+    // Determine which contract address to use:
+    // 1. Custom address from parameter
+    // 2. Chain config address from detected network
+    // 3. Default chain address as fallback
     let contractAddress;
+    let etherscanUrl = 'https://etherscan.io'; // Default explorer
+
     if (customContractAddress) {
       try {
-        // Validate address format
+        // Validate format of custom address
         contractAddress = utils.getAddress(customContractAddress);
         console.log('Using custom contract address:', contractAddress);
+
+        // Still use the block explorer from detected chain if available
+        if (chainConfig) {
+          etherscanUrl = chainConfig.etherscanUrl;
+        }
       } catch (error) {
         console.error('Invalid contract address format:', error);
-        // Fall back to default address
-        contractAddress = isProd
-          ? require('../utils/prod_contract_addr').contractAddress
-          : require('../utils/local_contract_addr').contractAddress;
+        // Fall back to chain configuration
+        if (chainConfig) {
+          contractAddress = chainConfig.contractAddress;
+          etherscanUrl = chainConfig.etherscanUrl;
+        } else {
+          // Use default chain as last resort
+          const defaultChainConfig = getChainConfig(getDefaultChainKey());
+          contractAddress = defaultChainConfig?.contractAddress;
+          etherscanUrl = defaultChainConfig?.etherscanUrl || etherscanUrl;
+        }
       }
     } else {
-      contractAddress = isProd
-        ? require('../utils/prod_contract_addr').contractAddress
-        : require('../utils/local_contract_addr').contractAddress;
+      // Use chain configuration based on network
+      if (chainConfig) {
+        contractAddress = chainConfig.contractAddress;
+        etherscanUrl = chainConfig.etherscanUrl;
+      } else {
+        // Use default chain as fallback
+        const defaultChainConfig = getChainConfig(getDefaultChainKey());
+        contractAddress = defaultChainConfig?.contractAddress;
+        etherscanUrl = defaultChainConfig?.etherscanUrl || etherscanUrl;
+      }
     }
 
-    console.log('Core contract address is ', contractAddress);
+    console.log('Using core contract address:', contractAddress);
+    console.log('Using block explorer:', etherscanUrl);
 
     const contract: AbstractContract = new Contract(
       contractAddress,
@@ -185,6 +217,10 @@ class EthereumAPI extends EventEmitter {
       contract,
       false
     );
+
+    // Store the explorer URL for transaction links
+    ethereumAPI.etherscanUrl = etherscanUrl;
+
     ethereumAPI.setupEventListeners();
 
     return ethereumAPI;
@@ -250,7 +286,7 @@ class EthereumAPI extends EventEmitter {
     terminalEmitter.printLink(
       unminedTx.txHash.slice(0, 6),
       () => {
-        window.open('https://holesky.etherscan.io/tx/' + unminedTx.txHash);
+        window.open(`${this.etherscanUrl}/tx/${unminedTx.txHash}`);
       },
       TerminalTextStyle.White
     );
@@ -271,7 +307,7 @@ class EthereumAPI extends EventEmitter {
       terminalEmitter.printLink(
         unminedTx.txHash.slice(0, 6),
         () => {
-          window.open('https://holesky.etherscan.io/tx/' + unminedTx.txHash);
+          window.open(`${this.etherscanUrl}/tx/${unminedTx.txHash}`);
         },
         TerminalTextStyle.White
       );
@@ -284,7 +320,7 @@ class EthereumAPI extends EventEmitter {
       terminalEmitter.printLink(
         unminedTx.txHash.slice(0, 6),
         () => {
-          window.open('https://holesky.etherscan.io/tx/' + unminedTx.txHash);
+          window.open(`${this.etherscanUrl}/tx/${unminedTx.txHash}`);
         },
         TerminalTextStyle.White
       );
@@ -406,6 +442,14 @@ class EthereumAPI extends EventEmitter {
       const provider: providers.Web3Provider = await getProvider();
       const signer = provider.getSigner();
 
+      // Get current network info
+      const network = await provider.getNetwork();
+      const chainId = network.chainId;
+
+      // Find chain config for this network
+      const chainConfig = getChainConfigByChainId(chainId);
+      const chainName = chainConfig ? chainConfig.name : `Chain-${chainId}`;
+
       // Merge provided config with default config
       const finalConfig: GameConfig = {
         ...DEFAULT_GAME_CONFIG,
@@ -414,23 +458,24 @@ class EthereumAPI extends EventEmitter {
 
       finalConfig.adminAddress = await signer.getAddress();
 
-      const isProd = process.env.NODE_ENV === 'production';
-
       // Add error handling for missing library address files
       let libraryAddresses = {};
       try {
-        libraryAddresses = isProd
-          ? require('../utils/prod_library_addrs').libraryAddresses
-          : require('../utils/local_library_addrs').libraryAddresses;
+        // Look for chain-specific library addresses in local_library_addrs.ts
+        const isProd = process.env.NODE_ENV === 'production';
+        if (isProd) {
+          libraryAddresses = require('../utils/prod_library_addrs').libraryAddresses;
+        } else {
+          libraryAddresses = require('../utils/local_library_addrs').libraryAddresses;
+        }
       } catch (error) {
         terminalEmitter.println(`Warning: Library addresses file not found. Using empty object.`, TerminalTextStyle.Red);
         console.warn('Library addresses file not found:', error);
       }
 
       try {
-
         // Now deploy the main DarkForestCore contract with libraries
-        terminalEmitter.println('Deploying main DarkForestCore contract...');
+        terminalEmitter.println(`Deploying main DarkForestCore contract to ${chainName}...`);
 
         const linkedBytecode = this.linkLibraries(DarkForestCoreJSON.bytecode, DarkForestCoreJSON.linkReferences, libraryAddresses);
 
@@ -454,6 +499,22 @@ class EthereumAPI extends EventEmitter {
 
         await coreContract.deployed();
 
+        const contractAddress = coreContract.address;
+
+        // Save the deployment information to console
+        console.log(`Deployed DarkForest contract to ${chainName} (Chain ID: ${chainId})`);
+        console.log(`Contract Address: ${contractAddress}`);
+        console.log(`Explorer URL: ${this.etherscanUrl}`);
+        console.log(`\nTo add this to your chain-config.ts file, use:`);
+        console.log(`
+  ${chainId.toString()}: {
+    name: '${chainName}',
+    chainId: ${chainId},
+    contractAddress: address('${contractAddress}'),
+    etherscanUrl: '${this.etherscanUrl}',
+    isTestnet: ${chainId === 1 ? 'false' : 'true'},
+  },`);
+
         // Initialize the core contract
         terminalEmitter.println('Initializing DarkForestCore contract...');
 
@@ -468,7 +529,7 @@ class EthereumAPI extends EventEmitter {
 
         await initTx.wait();
 
-        return coreContract.address;
+        return contractAddress;
       } catch (error) {
         terminalEmitter.println(`Deployment failed: ${error.message.slice(0, 100)}`, TerminalTextStyle.Red);
         console.error(error);

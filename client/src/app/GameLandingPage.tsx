@@ -36,6 +36,7 @@ import {
   GameWindowWrapper,
 } from './GameLandingPageComponents';
 import UIEmitter, { UIEmitterEvent } from '../utils/UIEmitter';
+import { getChainConfig, getDefaultChainKey } from '../utils/chain-config';
 
 enum InitState {
   NONE,
@@ -266,12 +267,16 @@ export default function GameLandingPage(_props: { replayMode: boolean }) {
       terminalEmitter.println('Ethereum enabled.', TerminalTextStyle.White);
     }
 
-    if (issues.includes(Incompatibility.NotRopsten)) {
-      terminalEmitter.print('Connecting to Holesky Testnet');
+    if (issues.includes(Incompatibility.UnsupportedNetwork)) {
+      const defaultChainKey = getDefaultChainKey();
+      const chainConfig = getChainConfig(defaultChainKey);
+      const networkName = chainConfig ? chainConfig.name : 'supported network';
+
+      terminalEmitter.print(`Connecting to ${networkName}`);
       await animEllipsis();
       terminalEmitter.print(' ');
       terminalEmitter.println(
-        'ERROR: Holesky not selected. Please select Holesky and try again.',
+        `ERROR: ${networkName} not selected. Please select ${networkName} and try again.`,
         TerminalTextStyle.Red
       );
     } else {
@@ -284,10 +289,15 @@ export default function GameLandingPage(_props: { replayMode: boolean }) {
         TerminalTextStyle.White
       );
       terminalEmitter.newline();
-      terminalEmitter.print('Falling back to Holesky');
+
+      const defaultChainKey = getDefaultChainKey();
+      const chainConfig = getChainConfig(defaultChainKey);
+      const networkName = chainConfig ? chainConfig.name : 'supported network';
+
+      terminalEmitter.print(`Falling back to ${networkName}`);
       await animEllipsis();
       terminalEmitter.print(' ');
-      terminalEmitter.println('Holesky selected.', TerminalTextStyle.White);
+      terminalEmitter.println(`${networkName} selected.`, TerminalTextStyle.White);
     }
 
     if (issues.length > 0) {
