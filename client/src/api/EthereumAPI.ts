@@ -122,10 +122,19 @@ class EthereumAPI extends EventEmitter {
     return ethereumAPI;
   }
 
-  static async create(): Promise<EthereumAPI> {
-    const contractABI = (
-      await fetch('/public/contracts/DarkForestCore.json').then((x) => x.json())
-    ).abi;
+  static async create(customContractAddress?: string): Promise<EthereumAPI> {
+    let contractABI;
+    try {
+      // Use absolute path to load contract ABI
+      const response = await fetch(window.location.origin + '/public/contracts/DarkForestCore.json');
+      if (!response.ok) {
+        throw new Error(`Failed to fetch contract ABI: ${response.status} ${response.statusText}`);
+      }
+      contractABI = (await response.json()).abi;
+    } catch (error) {
+      console.error('Error loading contract ABI:', error);
+      throw new Error(`Failed to load contract ABI: ${error.message}`);
+    }
 
     const provider: providers.Web3Provider = await getProvider();
     const signer: providers.JsonRpcSigner = provider.getSigner();
@@ -138,20 +147,36 @@ class EthereumAPI extends EventEmitter {
     const network = await provider.getNetwork();
     console.log('Chain ID:', network.chainId);
 
-    // Use custom contract address if provided, otherwise fallback to default
-    const isProd = process.env.NODE_ENV === 'production';
-    const contractAddress = isProd
-      ? require('../utils/prod_contract_addr').contractAddress
-      : require('../utils/local_contract_addr').contractAddress;
-    console.log('Using default contract address:', contractAddress);
 
+    const isProd = process.env.NODE_ENV === 'production';
+
+    // Use custom contract address if provided, otherwise use default
+    let contractAddress;
+    if (customContractAddress) {
+      try {
+        // Validate address format
+        contractAddress = utils.getAddress(customContractAddress);
+        console.log('Using custom contract address:', contractAddress);
+      } catch (error) {
+        console.error('Invalid contract address format:', error);
+        // Fall back to default address
+        contractAddress = isProd
+          ? require('../utils/prod_contract_addr').contractAddress
+          : require('../utils/local_contract_addr').contractAddress;
+      }
+    } else {
+      contractAddress = isProd
+        ? require('../utils/prod_contract_addr').contractAddress
+        : require('../utils/local_contract_addr').contractAddress;
+    }
+
+    console.log('Core contract address is ', contractAddress);
 
     const contract: AbstractContract = new Contract(
       contractAddress,
       contractABI,
       signer
     );
-    console.log('Core contract address is ', contractAddress);
 
     const ethereumAPI: EthereumAPI = new EthereumAPI(
       signer,
@@ -368,78 +393,89 @@ class EthereumAPI extends EventEmitter {
 
     // Get contract ABIs and bytecode
     terminalEmitter.println('Loading contract JSONs...', TerminalTextStyle.Sub);
-    const DarkForestCoreJSON = await fetch('/public/contracts/DarkForestCore.json').then(r => r.json());
-
-    // For ethers compatibility
-    const provider: providers.Web3Provider = await getProvider();
-    const signer = provider.getSigner();
-
-    // Merge provided config with default config
-    const finalConfig: GameConfig = {
-      ...DEFAULT_GAME_CONFIG,
-      ...gameConfig
-    };
-
-    finalConfig.adminAddress = await signer.getAddress();
-
-    const isProd = process.env.NODE_ENV === 'production';
-
-    // Add error handling for missing library address files
-    let libraryAddresses = {};
-    try {
-      libraryAddresses = isProd
-        ? require('../utils/prod_library_addrs').libraryAddresses
-        : require('../utils/local_library_addrs').libraryAddresses;
-    } catch (error) {
-      terminalEmitter.println(`Warning: Library addresses file not found. Using empty object.`, TerminalTextStyle.Red);
-      console.warn('Library addresses file not found:', error);
-    }
 
     try {
+      // Use absolute path to load contract ABI
+      const response = await fetch(window.location.origin + '/public/contracts/DarkForestCore.json');
+      if (!response.ok) {
+        throw new Error(`Failed to fetch contract ABI: ${response.status} ${response.statusText}`);
+      }
+      const DarkForestCoreJSON = await response.json();
 
-      // Now deploy the main DarkForestCore contract with libraries
-      terminalEmitter.println('Deploying main DarkForestCore contract...');
+      // For ethers compatibility
+      const provider: providers.Web3Provider = await getProvider();
+      const signer = provider.getSigner();
 
-      const linkedBytecode = this.linkLibraries(DarkForestCoreJSON.bytecode, DarkForestCoreJSON.linkReferences, libraryAddresses);
-
-      const coreFactory = new ethers.ContractFactory(
-        DarkForestCoreJSON.abi,
-        linkedBytecode,
-        signer
-      );
-
-      terminalEmitter.println('Please confirm the deployment transaction in your wallet...', TerminalTextStyle.White);
-      const coreContract = await coreFactory.deploy();
-      const deployTxHash = coreContract.deployTransaction.hash;
-
-      // Track the deployment transaction
-      const unminedDeployTx = {
-        type: EthTxType.DEPLOY,
-        txHash: deployTxHash,
-        sentAtTimestamp: Math.floor(Date.now() / 1000),
+      // Merge provided config with default config
+      const finalConfig: GameConfig = {
+        ...DEFAULT_GAME_CONFIG,
+        ...gameConfig
       };
-      this.onTxSubmit(unminedDeployTx);
 
-      await coreContract.deployed();
+      finalConfig.adminAddress = await signer.getAddress();
 
-      // Initialize the core contract
-      terminalEmitter.println('Initializing DarkForestCore contract...');
+      const isProd = process.env.NODE_ENV === 'production';
 
-      const initTx = await coreContract.init(finalConfig);
+      // Add error handling for missing library address files
+      let libraryAddresses = {};
+      try {
+        libraryAddresses = isProd
+          ? require('../utils/prod_library_addrs').libraryAddresses
+          : require('../utils/local_library_addrs').libraryAddresses;
+      } catch (error) {
+        terminalEmitter.println(`Warning: Library addresses file not found. Using empty object.`, TerminalTextStyle.Red);
+        console.warn('Library addresses file not found:', error);
+      }
 
-      const unminedInitializeTx = {
-        type: EthTxType.INITIALIZE,
-        txHash: initTx.hash,
-        sentAtTimestamp: Math.floor(Date.now() / 1000),
-      };
-      this.onTxSubmit(unminedInitializeTx);
+      try {
 
-      await initTx.wait();
+        // Now deploy the main DarkForestCore contract with libraries
+        terminalEmitter.println('Deploying main DarkForestCore contract...');
 
-      return coreContract.address;
+        const linkedBytecode = this.linkLibraries(DarkForestCoreJSON.bytecode, DarkForestCoreJSON.linkReferences, libraryAddresses);
+
+        const coreFactory = new ethers.ContractFactory(
+          DarkForestCoreJSON.abi,
+          linkedBytecode,
+          signer
+        );
+
+        terminalEmitter.println('Please confirm the deployment transaction in your wallet...', TerminalTextStyle.White);
+        const coreContract = await coreFactory.deploy();
+        const deployTxHash = coreContract.deployTransaction.hash;
+
+        // Track the deployment transaction
+        const unminedDeployTx = {
+          type: EthTxType.DEPLOY,
+          txHash: deployTxHash,
+          sentAtTimestamp: Math.floor(Date.now() / 1000),
+        };
+        this.onTxSubmit(unminedDeployTx);
+
+        await coreContract.deployed();
+
+        // Initialize the core contract
+        terminalEmitter.println('Initializing DarkForestCore contract...');
+
+        const initTx = await coreContract.init(finalConfig);
+
+        const unminedInitializeTx = {
+          type: EthTxType.INITIALIZE,
+          txHash: initTx.hash,
+          sentAtTimestamp: Math.floor(Date.now() / 1000),
+        };
+        this.onTxSubmit(unminedInitializeTx);
+
+        await initTx.wait();
+
+        return coreContract.address;
+      } catch (error) {
+        terminalEmitter.println(`Deployment failed: ${error.message.slice(0, 100)}`, TerminalTextStyle.Red);
+        console.error(error);
+        throw error;
+      }
     } catch (error) {
-      terminalEmitter.println(`Deployment failed: ${error.message.slice(0, 100)}`, TerminalTextStyle.Red);
-      console.error(error);
+      console.error('Error loading contract JSONs:', error);
       throw error;
     }
   }

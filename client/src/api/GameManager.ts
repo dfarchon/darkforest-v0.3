@@ -148,11 +148,11 @@ class GameManager extends EventEmitter implements AbstractGameManager {
     this.snarkHelper.destroy();
   }
 
-  static async create(useMockHash = false): Promise<GameManager> {
+  static async create(customContractAddress?: string, useMockHash = false): Promise<GameManager> {
     // initialize dependencies according to a DAG
 
     // first we initialize the EthereumAPI and get the user's eth account, and load contract constants + state
-    const ethereumAPI = await EthereumAPI.create();
+    const ethereumAPI = await EthereumAPI.create(customContractAddress);
     /*
     const ethereumAPI = await EthereumAPI.createMock(
       process.env.NODE_ENV === 'development'

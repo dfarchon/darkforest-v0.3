@@ -26,7 +26,7 @@ import TerminalEmitter, {
   TerminalEvent,
 } from '../utils/TerminalEmitter';
 import Terminal from './Terminal';
-import { useHistory } from 'react-router-dom';
+import { useHistory, useParams } from 'react-router-dom';
 import ModalWindow from './ModalWindow';
 import GameWindow from './GameWindow';
 import {
@@ -68,6 +68,9 @@ export enum InitRenderState {
 
 export default function GameLandingPage(_props: { replayMode: boolean }) {
   const history = useHistory();
+
+  const { contractAddress } = useParams<{ contractAddress?: string }>();
+
   /* terminal stuff */
   let initState = InitState.NONE;
   const [initRenderState, setInitRenderState] = useState<InitRenderState>(
@@ -478,28 +481,44 @@ export default function GameLandingPage(_props: { replayMode: boolean }) {
     terminalEmitter.println(
       'Downloading data from Ethereum blockchain... (the contract is very big. this may take a while)'
     );
-    const newGameManager: AbstractGameManager = await GameManager.create();
-    const gameUIManager = GameUIManager.create(newGameManager);
 
-    terminalEmitter.println('Connected to DarkForestCore contract.');
-    gameUIManagerRef.current = gameUIManager;
-    if (!newGameManager.hasJoinedGame()) {
-      initState = InitState.NO_HOME_PLANET;
-    } else {
-      terminalEmitter.println('Validating secret local data...');
-      const browserHasData = await doesBrowserHaveAccountData(
-        newGameManager.getContractAddress()
-      );
-      if (!browserHasData) {
-        terminalEmitter.println(
-          'ERROR: Account data for this player is not associated with this browser.',
-          TerminalTextStyle.Red
+    try {
+      // Pass contract address parameter to GameManager.create()
+      const newGameManager: AbstractGameManager = await GameManager.create(contractAddress);
+      const gameUIManager = GameUIManager.create(newGameManager);
+
+      terminalEmitter.println('Connected to DarkForestCore contract.');
+
+      // Display current connected contract address
+      const connectedContractAddress = newGameManager.getContractAddress();
+      terminalEmitter.println(`Contract address: ${connectedContractAddress}`, TerminalTextStyle.Blue);
+
+      gameUIManagerRef.current = gameUIManager;
+      if (!newGameManager.hasJoinedGame()) {
+        initState = InitState.NO_HOME_PLANET;
+      } else {
+        terminalEmitter.println('Validating secret local data...');
+        const browserHasData = await doesBrowserHaveAccountData(
+          newGameManager.getContractAddress()
         );
-        initState = InitState.ASK_ADD_ACCOUNT;
-        return;
+        if (!browserHasData) {
+          terminalEmitter.println(
+            'ERROR: Account data for this player is not associated with this browser.',
+            TerminalTextStyle.Red
+          );
+          initState = InitState.ASK_ADD_ACCOUNT;
+          return;
+        }
+        terminalEmitter.println('Initializing game...');
+        initState = InitState.ALL_CHECKS_PASS;
       }
-      terminalEmitter.println('Initializing game...');
-      initState = InitState.ALL_CHECKS_PASS;
+    } catch (error) {
+      console.error('Failed to initialize game:', error);
+      terminalEmitter.println(
+        `ERROR: Failed to connect to contract: ${error.message}`,
+        TerminalTextStyle.Red
+      );
+      initState = InitState.TERMINATED;
     }
   };
 

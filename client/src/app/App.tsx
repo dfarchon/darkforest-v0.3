@@ -14,7 +14,7 @@ function App() {
       <Switch>
         <Route path='/lobby' component={LobbyLandingPage} />
 
-        <Route path='/game1' component={GameLandingPage} />
+        <Route path='/game1/:contractAddress?' component={GameLandingPage} />
         <Route
           path='/replay1'
           render={() => <GameLandingPage replayMode={true} />}

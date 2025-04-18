@@ -31,13 +31,13 @@ import ModalWindow from './ModalWindow';
 import GameWindow from './GameWindow';
 import {
     Wrapper,
-    TerminalWrapper,
     Hidden,
     GameWindowWrapper,
 } from './GameLandingPageComponents';
 import UIEmitter, { UIEmitterEvent } from '../utils/UIEmitter';
 import BlueButton from '../components/BlueButton';
 import styled from 'styled-components';
+import { GameConfig } from '../_types/global/GameConfig';
 
 enum InitState {
     NONE,
@@ -69,9 +69,85 @@ export enum InitRenderState {
     COMPLETE,
 }
 
+// Main page layout container
+const PageLayout = styled.div`
+  display: flex;
+  flex-direction: column;
+  width: 90%;
+  max-width: 1000px;
+  margin: 0 auto;
+  height: 100vh;
+  overflow: hidden;
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+`;
 
-const BorderedGameWindowWrapper = styled.div`
-  box-sizing: border-box;
+// Terminal area - top 1/3 of the screen
+const TerminalContainer = styled.div`
+  border: 2px solid #00ADE1;
+  border-radius: 4px;
+  margin: 10px;
+  box-shadow: 0 0 10px rgba(0, 173, 225, 0.3);
+  height: 33vh;
+  overflow: hidden;
+  position: relative;
+  padding: 10px;
+`;
+
+const TerminalInnerWrapper = styled.div`
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 20px;
+  overflow: hidden;
+`;
+
+// Config panel area - bottom 2/3 of the screen
+const ConfigPanelContainer = styled.div`
+  border: 2px solid #00ADE1;
+  border-radius: 4px;
+  margin: 10px;
+  box-shadow: 0 0 10px rgba(0, 173, 225, 0.3);
+  height: 63vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+`;
+
+// Content area for the config panel
+const ConfigPanelContent = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: 25px;
+  color: white;
+`;
+
+// Button container at the bottom of config panel
+const ButtonContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding: 20px;
+  border-top: 1px solid rgba(0, 173, 225, 0.3);
+`;
+
+const GameLink = styled.div`
+  margin: 10px 0;
+  padding: 10px;
+  background-color: rgba(0, 173, 225, 0.1);
+  border-radius: 4px;
+  word-break: break-all;
+  font-family: monospace;
+  cursor: pointer;
+  
+  &:hover {
+    background-color: rgba(0, 173, 225, 0.2);
+  }
 `;
 
 export default function LobbyLandingPage(_props: { replayMode: boolean }) {
@@ -90,6 +166,23 @@ export default function LobbyLandingPage(_props: { replayMode: boolean }) {
     const modalClose = () => setModal(ModalState.NONE);
 
     const gameUIManagerRef = useRef<GameUIManager | null>(null);
+    const [deployedContractAddress, setDeployedContractAddress] = useState<string | null>(null);
+    const [gameConfig, setGameConfig] = useState<GameConfig | undefined>(undefined);
+
+    // Disable body scrolling
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        document.body.style.height = '100vh';
+        document.body.style.margin = '0';
+        document.body.style.padding = '0';
+
+        return () => {
+            document.body.style.overflow = '';
+            document.body.style.height = '';
+            document.body.style.margin = '';
+            document.body.style.padding = '';
+        };
+    }, []);
 
     const getUserInput = async () => {
         const terminalEmitter = TerminalEmitter.getInstance();
@@ -263,8 +356,6 @@ export default function LobbyLandingPage(_props: { replayMode: boolean }) {
             await animEllipsis();
             terminalEmitter.print(' ');
             terminalEmitter.println('Holesky selected.', TerminalTextStyle.White);
-
-
         }
 
         if (issues.length > 0) {
@@ -301,6 +392,10 @@ export default function LobbyLandingPage(_props: { replayMode: boolean }) {
         initState = InitState.DEPLOY_CONTRACT;
     };
 
+    const getGameLink = (contractAddress: string): string => {
+        return `${window.location.origin}/game1/${contractAddress}`;
+    };
+
     const deployContract = async () => {
         const terminalEmitter = TerminalEmitter.getInstance();
         const gameUIManager = gameUIManagerRef.current;
@@ -308,10 +403,55 @@ export default function LobbyLandingPage(_props: { replayMode: boolean }) {
             return;
         }
 
-        const contractAddress = await gameUIManager.deployContract();
-        terminalEmitter.println('Contract address: ' + contractAddress, TerminalTextStyle.White);
-        terminalEmitter.println('Contract deployed.', TerminalTextStyle.Green);
-    }
+        terminalEmitter.println('Deploying contract... Please confirm transaction in your wallet', TerminalTextStyle.White);
+        try {
+            const contractAddress = await gameUIManager.deployContract(gameConfig);
+            setDeployedContractAddress(contractAddress);
+
+            terminalEmitter.println('Contract address: ' + contractAddress, TerminalTextStyle.White);
+            terminalEmitter.println('Contract deployed successfully!', TerminalTextStyle.Green);
+
+            // Generate and display game link in terminal
+            const gameLink = getGameLink(contractAddress);
+            terminalEmitter.println('');
+            terminalEmitter.println('Game link created:', TerminalTextStyle.Sub);
+            terminalEmitter.printLink(gameLink, () => window.open(gameLink, '_blank'), TerminalTextStyle.Blue);
+            terminalEmitter.println('');
+            terminalEmitter.println('Click the link above or use the "Open Game" button to start playing!', TerminalTextStyle.White);
+        } catch (error) {
+            console.error('Contract deployment failed:', error);
+            terminalEmitter.println(`Contract deployment failed: ${error.message.slice(0, 100)}`, TerminalTextStyle.Red);
+        }
+    };
+
+    const navigateToGame = () => {
+        if (deployedContractAddress) {
+            window.open(getGameLink(deployedContractAddress), '_blank');
+        }
+    };
+
+    const copyToClipboard = () => {
+        if (deployedContractAddress) {
+            const gameLink = getGameLink(deployedContractAddress);
+            navigator.clipboard.writeText(gameLink);
+
+            const terminalEmitter = TerminalEmitter.getInstance();
+            terminalEmitter.println('Game link copied to clipboard!', TerminalTextStyle.Green);
+        }
+    };
+
+    const handleSaveSettings = (config: GameConfig) => {
+        setGameConfig(config);
+        const terminalEmitter = TerminalEmitter.getInstance();
+        terminalEmitter.println('Game settings saved!', TerminalTextStyle.Green);
+        terminalEmitter.println('Ready to deploy contract with custom settings.', TerminalTextStyle.White);
+    };
+
+    const resetSettings = () => {
+        setGameConfig(undefined);
+        const terminalEmitter = TerminalEmitter.getInstance();
+        terminalEmitter.println('Settings reset to defaults.', TerminalTextStyle.Green);
+    };
 
     const advanceState = async () => {
         if (initState === InitState.NONE) {
@@ -320,11 +460,9 @@ export default function LobbyLandingPage(_props: { replayMode: boolean }) {
             await advanceStateFromCompatibilityPassed();
         }
 
-
         if (initState === InitState.NONE || initState === InitState.COMPATIBILITY_CHECKS_PASSED) {
             advanceState();
         }
-
 
         // if (
         //     initState !== InitState.TERMINATED &&
@@ -357,55 +495,56 @@ export default function LobbyLandingPage(_props: { replayMode: boolean }) {
                 </ModalWindow>
             )}
 
-            <div style={{
-                border: '2px solid #00ADE1',
-                padding: '8px',
-                borderRadius: '4px',
-                margin: '10px',
-                boxShadow: '0 0 10px rgba(0, 173, 225, 0.3)',
-                width: '600px',
-                maxWidth: '90%',
-                height: '400px',
-                maxHeight: '90%'
-            }}>
+            <PageLayout>
+                {/* Terminal section - top 1/3 */}
+                <TerminalContainer>
+                    <TerminalInnerWrapper>
+                        <Terminal />
+                    </TerminalInnerWrapper>
+                </TerminalContainer>
 
-                <Terminal />
+                {/* Configuration panel - bottom 2/3 */}
+                <ConfigPanelContainer>
+                    {/* Config panel content area - will be replaced with actual config UI */}
+                    <ConfigPanelContent>
+                        {/* Placeholder for game configuration UI */}
+                        <h3 style={{ color: '#00ADE1' }}>Game Configuration</h3>
+                        <p>Configuration panel content will go here.</p>
 
-            </div>
+                        {deployedContractAddress && (
+                            <GameLink onClick={copyToClipboard}>
+                                {getGameLink(deployedContractAddress)}
+                            </GameLink>
+                        )}
+                    </ConfigPanelContent>
 
-            <div style={{
-                border: '2px solid #00ADE1',
-                padding: '8px',
-                borderRadius: '4px',
-                margin: '10px',
-                boxShadow: '0 0 10px rgba(0, 173, 225, 0.3)',
-                width: '600px',
-                maxWidth: '90%',
-                height: '400px',
-                maxHeight: '90%'
-            }}>
+                    {/* Button row at the bottom of config panel */}
+                    <ButtonContainer>
 
-                <BlueButton onClick={advanceStateFromNone}>
-                    advance State From None
-                </BlueButton>
+                        <BlueButton onClick={resetSettings}>
+                            Reset to Defaults
+                        </BlueButton>
 
-                <br />
-
-
-                <BlueButton onClick={advanceStateFromCompatibilityPassed}>
-                    advance State From Compatibility Passed
-                </BlueButton>
-
-                <br />
-
-                <BlueButton onClick={deployContract}>
-                    Deploy Contract
-                </BlueButton>
-
-            </div>
+                        <BlueButton onClick={deployContract}>
+                            Deploy Universe
+                        </BlueButton>
 
 
 
-        </Wrapper >
+                        {deployedContractAddress && (
+                            <>
+                                <BlueButton onClick={navigateToGame}>
+                                    Open Game
+                                </BlueButton>
+
+                                <BlueButton onClick={copyToClipboard}>
+                                    Copy Link
+                                </BlueButton>
+                            </>
+                        )}
+                    </ButtonContainer>
+                </ConfigPanelContainer>
+            </PageLayout>
+        </Wrapper>
     );
 }
