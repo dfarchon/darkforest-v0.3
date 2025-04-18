@@ -464,20 +464,16 @@ export default function LobbyLandingPage(_props: { replayMode: boolean }) {
     const advanceState = async () => {
         if (initState === InitState.NONE) {
             await advanceStateFromNone();
+
+            // Only continue to the next state if there are no wallet issues
+            const issues = await unsupportedFeatures();
+            if (issues.length === 0) {
+                advanceState(); // Only recursively call when no issues
+            }
         } else if (initState === InitState.COMPATIBILITY_CHECKS_PASSED) {
             await advanceStateFromCompatibilityPassed();
-        }
-
-        if (initState === InitState.NONE || initState === InitState.COMPATIBILITY_CHECKS_PASSED) {
             advanceState();
         }
-
-        // if (
-        //     initState !== InitState.TERMINATED &&
-        //     initState !== InitState.COMPLETE
-        // ) {
-        //     advanceState();
-        // }
     };
 
     useEffect(() => {
