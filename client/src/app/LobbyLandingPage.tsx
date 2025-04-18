@@ -37,8 +37,9 @@ import {
 import UIEmitter, { UIEmitterEvent } from '../utils/UIEmitter';
 import BlueButton from '../components/BlueButton';
 import styled from 'styled-components';
-import { GameConfig } from '../_types/global/GameConfig';
+import { GameConfig, DEFAULT_GAME_CONFIG } from '../_types/global/GameConfig';
 import { getChainConfig, getDefaultChainKey } from '../utils/chain-config';
+import GameConfigPanel from '../components/GameConfigPanel';
 
 enum InitState {
     NONE,
@@ -452,13 +453,10 @@ export default function LobbyLandingPage(_props: { replayMode: boolean }) {
 
     const handleSaveSettings = (config: GameConfig) => {
         setGameConfig(config);
-        const terminalEmitter = TerminalEmitter.getInstance();
-        terminalEmitter.println('Game settings saved!', TerminalTextStyle.Green);
-        terminalEmitter.println('Ready to deploy contract with custom settings.', TerminalTextStyle.White);
     };
 
     const resetSettings = () => {
-        setGameConfig(undefined);
+        setGameConfig(DEFAULT_GAME_CONFIG);
         const terminalEmitter = TerminalEmitter.getInstance();
         terminalEmitter.println('Settings reset to defaults.', TerminalTextStyle.Green);
     };
@@ -515,31 +513,23 @@ export default function LobbyLandingPage(_props: { replayMode: boolean }) {
 
                 {/* Configuration panel - bottom 2/3 */}
                 <ConfigPanelContainer>
-                    {/* Config panel content area - will be replaced with actual config UI */}
+                    {/* Configuration panel content area - replace placeholder with GameConfigPanel */}
                     <ConfigPanelContent>
-                        {/* Placeholder for game configuration UI */}
-                        <h3 style={{ color: '#00ADE1' }}>Game Configuration</h3>
-                        <p>Configuration panel content will go here.</p>
-
-                        {deployedContractAddress && (
-                            <GameLink onClick={copyToClipboard}>
-                                {getGameLink(deployedContractAddress)}
-                            </GameLink>
-                        )}
+                        <GameConfigPanel
+                            onSaveConfig={handleSaveSettings}
+                            initialConfig={gameConfig}
+                        />
                     </ConfigPanelContent>
 
                     {/* Button row at the bottom of config panel */}
                     <ButtonContainer>
-
                         <BlueButton onClick={resetSettings}>
-                            Reset to Defaults
+                            Reset to Default
                         </BlueButton>
 
                         <BlueButton onClick={deployContract}>
                             Deploy Universe
                         </BlueButton>
-
-
 
                         {deployedContractAddress && (
                             <>
