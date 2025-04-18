@@ -42,6 +42,7 @@ import styled from 'styled-components';
 enum InitState {
     NONE,
     COMPATIBILITY_CHECKS_PASSED,
+    DEPLOY_CONTRACT,
     ASKING_HAS_WHITELIST_KEY,
     ASKING_WAITLIST_EMAIL,
     ASKING_WHITELIST_KEY,
@@ -293,21 +294,23 @@ export default function LobbyLandingPage(_props: { replayMode: boolean }) {
         const newGameManager: AbstractGameManager = await GameManager.create();
         const gameUIManager = GameUIManager.create(newGameManager);
 
-        terminalEmitter.println('Connected to DarkForestCore contract.');
+        terminalEmitter.println('Connected to contract.', TerminalTextStyle.Green);
+        terminalEmitter.println('');
         gameUIManagerRef.current = gameUIManager;
+
+        initState = InitState.DEPLOY_CONTRACT;
     };
 
     const deployContract = async () => {
         const terminalEmitter = TerminalEmitter.getInstance();
-        terminalEmitter.println('Deploying contract...');
         const gameUIManager = gameUIManagerRef.current;
         if (!gameUIManager) {
             return;
         }
 
         const contractAddress = await gameUIManager.deployContract();
-        terminalEmitter.println('Contract deployed.', TerminalTextStyle.Green);
         terminalEmitter.println('Contract address: ' + contractAddress, TerminalTextStyle.White);
+        terminalEmitter.println('Contract deployed.', TerminalTextStyle.Green);
     }
 
     const advanceState = async () => {
@@ -317,6 +320,10 @@ export default function LobbyLandingPage(_props: { replayMode: boolean }) {
             await advanceStateFromCompatibilityPassed();
         }
 
+
+        if (initState === InitState.NONE || initState === InitState.COMPATIBILITY_CHECKS_PASSED) {
+            advanceState();
+        }
 
 
         // if (

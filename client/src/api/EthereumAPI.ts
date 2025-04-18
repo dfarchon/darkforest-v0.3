@@ -138,11 +138,13 @@ class EthereumAPI extends EventEmitter {
     const network = await provider.getNetwork();
     console.log('Chain ID:', network.chainId);
 
-
+    // Use custom contract address if provided, otherwise fallback to default
     const isProd = process.env.NODE_ENV === 'production';
     const contractAddress = isProd
       ? require('../utils/prod_contract_addr').contractAddress
       : require('../utils/local_contract_addr').contractAddress;
+    console.log('Using default contract address:', contractAddress);
+
 
     const contract: AbstractContract = new Contract(
       contractAddress,
@@ -360,8 +362,9 @@ class EthereumAPI extends EventEmitter {
 
   async deployContract(gameConfig?: GameConfig): Promise<string> {
     const terminalEmitter = TerminalEmitter.getInstance();
-    terminalEmitter.println('Starting DarkForest contract deployment...', TerminalTextStyle.Green);
 
+    terminalEmitter.shell('df deploy new universe');
+    terminalEmitter.println('Starting DarkForest contract deployment...', TerminalTextStyle.Green);
 
     // Get contract ABIs and bytecode
     terminalEmitter.println('Loading contract JSONs...', TerminalTextStyle.Sub);
@@ -379,75 +382,23 @@ class EthereumAPI extends EventEmitter {
 
     finalConfig.adminAddress = await signer.getAddress();
 
+    const isProd = process.env.NODE_ENV === 'production';
+
+    // Add error handling for missing library address files
+    let libraryAddresses = {};
+    try {
+      libraryAddresses = isProd
+        ? require('../utils/prod_library_addrs').libraryAddresses
+        : require('../utils/local_library_addrs').libraryAddresses;
+    } catch (error) {
+      terminalEmitter.println(`Warning: Library addresses file not found. Using empty object.`, TerminalTextStyle.Red);
+      console.warn('Library addresses file not found:', error);
+    }
 
     try {
-      // Deploy library contracts first
-      terminalEmitter.println('Deploying library contracts...', TerminalTextStyle.Blue);
-      const libraryAddresses: Record<string, string> = {};
-
-      // 1. Deploy DarkForestInitialize
-      terminalEmitter.println('(1/5) Deploying DarkForestInitialize...', TerminalTextStyle.Sub);
-      const initializeJSON = await fetch('/public/contracts/DarkForestInitialize.json').then(r => r.json());
-      const initializeFactory = new ethers.ContractFactory(
-        initializeJSON.abi,
-        initializeJSON.bytecode,
-        signer
-      );
-      const initializeContract = await initializeFactory.deploy();
-      await initializeContract.deployed();
-      libraryAddresses["DarkForestInitialize"] = initializeContract.address;
-
-      // 2. Deploy DarkForestLazyUpdate
-      terminalEmitter.println('(2/5) Deploying DarkForestLazyUpdate...', TerminalTextStyle.Sub);
-      const lazyUpdateJSON = await fetch('/public/contracts/DarkForestLazyUpdate.json').then(r => r.json());
-      const lazyUpdateFactory = new ethers.ContractFactory(
-        lazyUpdateJSON.abi,
-        lazyUpdateJSON.bytecode,
-        signer
-      );
-      const lazyUpdateContract = await lazyUpdateFactory.deploy();
-      await lazyUpdateContract.deployed();
-      libraryAddresses["DarkForestLazyUpdate"] = lazyUpdateContract.address;
-
-      // 3. Deploy DarkForestPlanet
-      terminalEmitter.println('(3/5) Deploying DarkForestPlanet...', TerminalTextStyle.Sub);
-      const planetJSON = await fetch('/public/contracts/DarkForestPlanet.json').then(r => r.json());
-      const planetFactory = new ethers.ContractFactory(
-        planetJSON.abi,
-        planetJSON.bytecode,
-        signer
-      );
-      const planetContract = await planetFactory.deploy();
-      await planetContract.deployed();
-      libraryAddresses["DarkForestPlanet"] = planetContract.address;
-
-      // 4. Deploy DarkForestUtils
-      terminalEmitter.println('(4/5) Deploying DarkForestUtils...', TerminalTextStyle.Sub);
-      const utilsJSON = await fetch('/public/contracts/DarkForestUtils.json').then(r => r.json());
-      const utilsFactory = new ethers.ContractFactory(
-        utilsJSON.abi,
-        utilsJSON.bytecode,
-        signer
-      );
-      const utilsContract = await utilsFactory.deploy();
-      await utilsContract.deployed();
-      libraryAddresses["DarkForestUtils"] = utilsContract.address;
-
-      // 5. Deploy Verifier
-      terminalEmitter.println('(5/5) Deploying Verifier...', TerminalTextStyle.Sub);
-      const verifierJSON = await fetch('/public/contracts/Verifier.json').then(r => r.json());
-      const verifierFactory = new ethers.ContractFactory(
-        verifierJSON.abi,
-        verifierJSON.bytecode,
-        signer
-      );
-      const verifierContract = await verifierFactory.deploy();
-      await verifierContract.deployed();
-      libraryAddresses["Verifier"] = verifierContract.address;
 
       // Now deploy the main DarkForestCore contract with libraries
-      terminalEmitter.println('Deploying main DarkForestCore contract...', TerminalTextStyle.Green);
-
+      terminalEmitter.println('Deploying main DarkForestCore contract...');
 
       const linkedBytecode = this.linkLibraries(DarkForestCoreJSON.bytecode, DarkForestCoreJSON.linkReferences, libraryAddresses);
 
@@ -459,23 +410,35 @@ class EthereumAPI extends EventEmitter {
 
       terminalEmitter.println('Please confirm the deployment transaction in your wallet...', TerminalTextStyle.White);
       const coreContract = await coreFactory.deploy();
-      terminalEmitter.println(`Core contract deployment transaction submitted: ${coreContract.deployTransaction.hash}`, TerminalTextStyle.Blue);
+      const deployTxHash = coreContract.deployTransaction.hash;
+
+      // Track the deployment transaction
+      const unminedDeployTx = {
+        type: EthTxType.DEPLOY,
+        txHash: deployTxHash,
+        sentAtTimestamp: Math.floor(Date.now() / 1000),
+      };
+      this.onTxSubmit(unminedDeployTx);
+
       await coreContract.deployed();
 
       // Initialize the core contract
-      terminalEmitter.println('Initializing DarkForestCore contract...', TerminalTextStyle.Green);
+      terminalEmitter.println('Initializing DarkForestCore contract...');
 
       const initTx = await coreContract.init(finalConfig);
 
-      terminalEmitter.println(`Initialization transaction submitted: ${initTx.hash}`, TerminalTextStyle.Blue);
+      const unminedInitializeTx = {
+        type: EthTxType.INITIALIZE,
+        txHash: initTx.hash,
+        sentAtTimestamp: Math.floor(Date.now() / 1000),
+      };
+      this.onTxSubmit(unminedInitializeTx);
+
       await initTx.wait();
-
-      terminalEmitter.println(`Contract successfully deployed at: ${coreContract.address}`, TerminalTextStyle.Green);
-
 
       return coreContract.address;
     } catch (error) {
-      terminalEmitter.println(`Deployment failed: ${error.message}`, TerminalTextStyle.Red);
+      terminalEmitter.println(`Deployment failed: ${error.message.slice(0, 100)}`, TerminalTextStyle.Red);
       console.error(error);
       throw error;
     }

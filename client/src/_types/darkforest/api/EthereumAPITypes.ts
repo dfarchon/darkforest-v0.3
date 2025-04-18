@@ -138,8 +138,8 @@ export type ClientMockchainData =
   | EthersBN
   | ClientMockchainData[]
   | {
-      [key in string | number]: ClientMockchainData;
-    };
+    [key in string | number]: ClientMockchainData;
+  };
 
 /*
 export interface RawArrivalData {
@@ -330,6 +330,8 @@ export enum EthTxType {
   INIT = 'INIT',
   MOVE = 'MOVE',
   UPGRADE = 'UPGRADE',
+  DEPLOY = 'DEPLOY',
+  INITIALIZE = 'INITIALIZE',
 }
 
 export interface UnconfirmedTx {
