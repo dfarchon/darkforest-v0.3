@@ -18,16 +18,6 @@ const config: HardhatUserConfig = {
       },
       chainId: 31337,
     },
-    holesky: {
-      url: "https://rpc.ankr.com/eth_holesky",
-      accounts: {
-        mnemonic: MNEMONIC,
-      },
-      chainId: 17000,
-      gasPrice: 3000000000,     // 3 Gwei fixed gas price
-      gasMultiplier: 1.5,       // Increased to 1.5x
-      timeout: 120000,          // 2 minutes timeout
-    },
     // Used when you dont specify a network on command line, like in tests
     hardhat: {
       accounts: {
@@ -38,6 +28,24 @@ const config: HardhatUserConfig = {
         auto: false,
         interval: 1000,
       },
+    },
+    holesky: {
+      url: "https://rpc.ankr.com/eth_holesky",
+      accounts: {
+        mnemonic: MNEMONIC,
+      },
+      chainId: 17000,
+      gasPrice: 3000000000,     // 3 Gwei fixed gas price
+      gasMultiplier: 1.5,       // Increased to 1.5x
+      timeout: 120000,          // 2 minutes timeout
+    },
+    //Redstone Testnet
+    pyrope: {
+      url: process.env.PYROPE_RPC,
+      accounts: {
+        mnemonic: MNEMONIC,
+      },
+      chainId: 695569,
     },
   },
   solidity: {

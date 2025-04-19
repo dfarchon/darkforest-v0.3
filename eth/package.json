@@ -8,7 +8,10 @@
     "format": "prettier --write .",
     "prettier": "prettier --write --plugin=prettier-plugin-solidity 'contracts/**/*.sol'",
     "compile": "hardhat compile",
-    "hardhat:dev": "hardhat --network localhost"
+    "hardhat:dev": "hardhat --network localhost",
+    "deploy:dev": "hardhat --network localhost deploy",
+    "deploy:pyrope": "hardhat --network pyrope deploy",
+    "deploy:mainnet": "hardhat --network redstone deploy"
   },
   "keywords": [],
   "author": "",

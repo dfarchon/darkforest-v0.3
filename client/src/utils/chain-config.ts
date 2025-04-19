@@ -33,6 +33,13 @@ const CHAIN_CONFIGS: Record<string, ChainConfig> = {
         isTestnet: true,
     },
     // Add more chains as needed
+    pyrope: {
+        name: 'Redstone Pyrope',
+        chainId: 695569,
+        contractAddress: address(prodContractAddress),
+        etherscanUrl: 'https://explorer.pyropechain.com',
+        isTestnet: true,
+    },
 };
 
 // LocalStorage key for custom chains
@@ -82,7 +89,7 @@ function getCustomChains(): Record<string, ChainConfig> {
 
 // Get the default chain to use based on environment
 export function getDefaultChainKey(): string {
-    return process.env.NODE_ENV === 'production' ? 'holesky' : 'localhost';
+    return process.env.NODE_ENV === 'production' ? 'pyrope' : 'localhost';
 }
 
 // Get all available chain keys
